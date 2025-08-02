@@ -353,90 +353,202 @@ export const productService = {
 
 // Servicio para profiles
 export const profileService = {
-  // Obtener todos los profiles
+  // Obtener todos los perfiles (solo para administradores)
   getAll: async () => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuario no autenticado");
       const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", user.id);
+        .from('profiles')
+        .select('*, roles(*), groups(*)')
+        .order('full_name', { ascending: true });
+
       if (error) throw error;
       return { data, error: null };
     } catch (error) {
-      return handleError(error, "profileService.getAll");
+      return handleError(error, 'profileService.getAll');
     }
   },
+
+  // Obtener perfiles del mismo grupo
+  getGroupMembers: async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuario no autenticado');
+
+      // Primero obtenemos el grupo del usuario actual
+      const { data: currentUser } = await supabase
+        .from('profiles')
+        .select('group_id')
+        .eq('id', user.id)
+        .single();
+
+      if (!currentUser?.group_id) {
+        return { data: [], error: null };
+      }
+
+      // Luego obtenemos todos los perfiles del mismo grupo
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*, roles(*), groups(*)')
+        .eq('group_id', currentUser.group_id)
+        .order('full_name', { ascending: true });
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      return handleError(error, 'profileService.getGroupMembers');
+    }
+  },
+
+  // Obtener perfil por ID
+  getById: async (id: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*, roles(*), groups(*)')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      return handleError(error, 'profileService.getById');
+    }
+  },
+
+  // Obtener perfil del usuario actual
+  getCurrentUserProfile: async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuario no autenticado');
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*, roles(*), groups(*)')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      return handleError(error, 'profileService.getCurrentUserProfile');
+    }
+  },
+
+  // Crear un nuevo perfil
   create: async (
     profileData: Omit<
-      Tables["profiles"]["Insert"],
-      "id" | "user_id" | "created_at" | "updated_at"
+      Tables['profiles']['Insert'],
+      'id' | 'created_at' | 'updated_at'
     >
   ) => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuario no autenticado");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuario no autenticado');
+
+      // Verificar si el usuario tiene permiso para asignar el grupo
+      if (profileData.group_id) {
+        const { data: currentUser } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        // Solo administradores pueden asignar grupos
+        if (currentUser?.role !== 'admin') {
+          delete profileData.group_id;
+        }
+      }
 
       const { data, error } = await supabase
-        .from("profiles")
-        .insert([{ ...profileData, user_id: user.id }])
-        .select()
+        .from('profiles')
+        .insert({
+          ...profileData,
+          id: user.id, // Usar el ID del usuario autenticado
+          email: user.email || '' // Asegurar que el email esté presente
+        })
+        .select('*, roles(*), groups(*)')
         .single();
 
       if (error) throw error;
       return { data, error: null };
     } catch (error) {
-      return handleError(error, "profileService.create");
+      return handleError(error, 'profileService.create');
     }
   },
+
+  // Actualizar un perfil
   update: async (
     id: string,
-    profileData: Partial<Tables["profiles"]["Update"]>
+    profileData: Partial<Tables['profiles']['Update']>
   ) => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuario no autenticado");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuario no autenticado');
+
+      // Verificar permisos
+      const { data: currentUser } = await supabase
+        .from('profiles')
+        .select('role, group_id')
+        .eq('id', user.id)
+        .single();
+
+      // Solo administradores pueden cambiar roles y grupos
+      if (currentUser?.role !== 'admin') {
+        delete profileData.role_id;
+        delete profileData.group_id;
+      }
 
       const { data, error } = await supabase
-        .from("profiles")
-        .update(profileData)
-        .eq("id", id)
-        .eq("user_id", user.id)
-        .select()
+        .from('profiles')
+        .update({
+          ...profileData,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+        .select('*, roles(*), groups(*)')
         .single();
 
       if (error) throw error;
       return { data, error: null };
     } catch (error) {
-      return handleError(error, "profileService.update");
+      return handleError(error, 'profileService.update');
     }
   },
+
+  // Eliminar un perfil (solo para administradores)
   delete: async (id: string) => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuario no autenticado");
-
       const { error } = await supabase
-        .from("profiles")
+        .from('profiles')
         .delete()
-        .eq("id", id)
-        .eq("user_id", user.id);
+        .eq('id', id);
 
       if (error) throw error;
-      return { data: { success: true }, error: null };
+      return { error: null };
     } catch (error) {
-      return handleError(error, "profileService.delete");
+      return handleError(error, 'profileService.delete');
     }
   },
+
+  // Actualizar el grupo de un usuario
+  updateUserGroup: async (userId: string, groupId: string | null) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ 
+          group_id: groupId,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId)
+        .select('*, roles(*), groups(*)')
+        .single();
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      return handleError(error, 'profileService.updateUserGroup');
+    }
+  }
 };
 // Servicio para roles
 export const roleService = {
@@ -686,15 +798,13 @@ export const workOrderItemService = {
 
         if (fetchError) throw fetchError;
 
-        // Usar los valores actualizados o los existentes
-        const quantity = itemData.quantity ?? currentItem.quantity;
-        const unitPrice = itemData.unit_price ?? currentItem.unit_price;
-        const discountPercent =
-          itemData.discount_percent ?? currentItem.discount_percent;
+        // Usar los valores actualizados o los existentes con valores por defecto
+        const quantity = itemData.quantity ?? currentItem.quantity ?? 0;
+        const unitPrice = itemData.unit_price ?? currentItem.unit_price ?? 0;
+        const discountPercent = itemData.discount_percent ?? currentItem.discount_percent ?? 0;
 
-        // Calcular nuevo total
-        const totalPrice =
-          quantity * unitPrice * (1 - (discountPercent || 0) / 100);
+        // Calcular nuevo total con valores por defecto seguros
+        const totalPrice = quantity * unitPrice * (1 - discountPercent / 100);
 
         // Agregar el total calculado a los datos de actualización
         itemData.total_price = totalPrice;
