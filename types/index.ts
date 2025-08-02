@@ -59,3 +59,15 @@ export interface WorkOrder {
   completedAt?: string;
   total?: number;
 }
+
+export interface Profiles {
+    id: number;
+    email: string;
+    full_name: string;
+    role: string;
+    created_at: string;
+    updated_at: string;
+    role_id: number;
+    user_id: number;
+    group_id: number;
+}

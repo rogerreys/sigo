@@ -203,12 +203,12 @@ export const userService = {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuario no autenticado");
-
+      
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("user_id", user.id)
-        .order("name", { ascending: true });
+        .order("full_name", { ascending: true });
 
       if (error) throw error;
       return { data, error: null };
@@ -358,7 +358,7 @@ export const profileService = {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*, roles(*), groups(*)')
+        .select('*')
         .order('full_name', { ascending: true });
 
       if (error) throw error;

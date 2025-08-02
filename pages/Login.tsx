@@ -22,9 +22,18 @@ const Login: React.FC = () => {
         const { error } = await signIn(email, password);
         if (error) throw error;
       } else {
-        const { error } = await singUp(email, password);
+        const { data, error } = await singUp(email, password);
         if (error) throw error;
         // Si el registro es exitoso, cambiamos al modo de inicio de sesión
+        profileService.create({
+          user_id: data.user.id,
+          email: data.user.email,
+          full_name: data.user.user_metadata.full_name,
+          role_id: data.user.user_metadata.role_id,
+          role: data.user.user_metadata.role,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
         setIsLogin(true);
         setError('¡Registro exitoso! Por favor inicia sesión.');
       }

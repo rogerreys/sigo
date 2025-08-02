@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { profileService, roleService } from '../services/supabase';
+import { groupService } from '../services/groupService';
 import Button from '../components/common/Button';
 import { InformationCircleIcon } from '../utils/icons';
 import {useAuth} from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { Database } from '../types/supabase';
 
 interface NewUserFormProps {
   onSuccess?: () => void;
@@ -18,7 +20,10 @@ const NewUserForm: React.FC<NewUserFormProps> = ({ onSuccess, onCancel }) => {
     role_id: '',
   });
   const [roles, setRoles] = useState<{id: string; name: string}[]>([]);
+  const [groups, setGroups] = useState<{id: string; name: string}[]>([]);
+  const [users, setUsers] = useState<Database['public']['Tables']['profiles']['Row'][]>([]);
   const [loading, setLoading] = useState(false);
+  const [dataloaded, setDataloaded] = useState(false);
   const [error, setError] = useState('');
   const { signIn } = useAuth();
   const navigate = useNavigate();
@@ -36,11 +41,31 @@ const NewUserForm: React.FC<NewUserFormProps> = ({ onSuccess, onCancel }) => {
         }
       }
     };
+    const fetchGroups = async () => {
+      const { data, error } = await groupService.getAll();
+      if (error) throw error;
+      if (data) {
+        setGroups(data);
+      }
+    }
+    const fetchUser = async () => {
+      const { data, error } = await profileService.getAll();
+      if (error) throw error;
+      if (data) {
+        setUsers(data);
+      }
+    }
     fetchRoles();
+    fetchGroups();
+    fetchUser();
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    if(value){
+      console.log(value);
+      setDataloaded(true);
+    }
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -120,6 +145,13 @@ const NewUserForm: React.FC<NewUserFormProps> = ({ onSuccess, onCancel }) => {
     }
   };
 
+  onCancel = () => {
+    navigate('/settings');
+  };
+  onSuccess = () => {
+    navigate('/settings');
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <h2 className="text-xl font-semibold mb-4">Nuevo Usuario</h2>
@@ -135,14 +167,19 @@ const NewUserForm: React.FC<NewUserFormProps> = ({ onSuccess, onCancel }) => {
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Nombre completo <span className="text-red-500">*</span>
           </label>
-          <input
-            type="text"
-            name="full_name"
-            value={formData.full_name}
+          <select
+            name="user_id"
             onChange={handleChange}
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
+          >
+            <option value="">Seleccione un usuario</option>
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.full_name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>
@@ -161,18 +198,21 @@ const NewUserForm: React.FC<NewUserFormProps> = ({ onSuccess, onCancel }) => {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Contraseña <span className="text-red-500">*</span>
-            <span className="ml-1 text-gray-500 text-xs">(mínimo 6 caracteres)</span>
+            Grupo <span className="text-red-500">*</span>
           </label>
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
+          <select
+            name="group_id"
             onChange={handleChange}
-            minLength={6}
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
+          >
+            <option value="">Seleccione un grupo</option>
+            {groups.map((group) => (
+              <option key={group.id} value={group.id}>
+                {group.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>

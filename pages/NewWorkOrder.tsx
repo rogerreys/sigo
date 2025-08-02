@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Form, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
-import { Client, Product, User, Service, WorkOrderItem, WorkOrderStatus } from '../types';
+import { Client, Product, Profiles, Service, WorkOrderItem, WorkOrderStatus } from '../types';
 import Button from '../components/common/Button';
 import { XCircleIcon } from '../utils/icons';
 import { clientService, productService, userService } from '../services/supabase';
@@ -21,7 +21,7 @@ const NewWorkOrder: React.FC = () => {
     // Data from DB
     const [clients, setClients] = useState<Client[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
-    const [users, setUsers] = useState<User[]>([]);
+    const [users, setUsers] = useState<Profiles[]>([]);
 
     // Loading states
     const [loadingData, setLoadingData] = useState(true);
@@ -29,8 +29,13 @@ const NewWorkOrder: React.FC = () => {
 
     // Form state
     const [selectedClientId, setSelectedClientId] = useState<string>('');
-    const [vehicleInfo, setVehicleInfo] = useState('');
+    const [vehicleYear, setVehicleYear] = useState<string>('');
+    const [vehicleMake, setVehicleMake] = useState<string>('');
+    const [vehicleModel, setVehicleModel] = useState<string>('');
+    const [vehicleMileage, setVehicleMileage] = useState<string>('');
     const [problemDescription, setProblemDescription] = useState('');
+    const [diagnosis, setDiagnosis] = useState('');
+    const [fuelLevel, setFuelLevel] = useState('');
     const [assignedToId, setAssignedToId] = useState<string>('');
     const [addedServices, setAddedServices] = useState<Service[]>([]);
     const [addedItems, setAddedItems] = useState<(WorkOrderItem & { productName: string })[]>([]);
@@ -58,9 +63,9 @@ const NewWorkOrder: React.FC = () => {
                 if (clientsRes.data) setClients(clientsRes.data as Client[]);
                 if (productsRes.data) setProducts(productsRes.data as Product[]);
                 if (usersRes.data) {
-                    const mechanics = (usersRes.data as User[]).filter((u: User) => u.role === 'Mecánico');
-                    setUsers(mechanics);
-                    if (mechanics.length > 0) setAssignedToId(mechanics[0].id);
+                    const mechanics = (usersRes.data as Profiles[]).filter((u: Profiles) => u.role === 'staff');
+                    setUsers(mechanics as Profiles[]);
+                    if (mechanics.length > 0) setAssignedToId(mechanics[0].id.toString());
                 }
 
             } catch (error) {
@@ -118,11 +123,16 @@ const NewWorkOrder: React.FC = () => {
         setAddedItems(addedItems.filter((i: WorkOrderItem) => i.productId !== productId));
     };
 
+    const handleAssignToChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        console.log("e.target.value: ", e.target.value);
+        setAssignedToId(e.target.value);
+    };
+
     const quoteTotals = useMemo(() => {
         const servicesTotal = addedServices.reduce((acc, service) => acc + service.price, 0);
         const itemsTotal = addedItems.reduce((acc, item) => acc + (item.unitPrice * item.quantity), 0);
         const subtotal = servicesTotal + itemsTotal;
-        const taxRate = 0.12; // Example 12% tax
+        const taxRate = 0.15; // Example 15% tax
         const tax = subtotal * taxRate;
         const total = subtotal + tax;
         return { servicesTotal, itemsTotal, subtotal, tax, total, taxRate };
@@ -143,7 +153,7 @@ const NewWorkOrder: React.FC = () => {
             clientId: selectedClientId,
             assignedTo: assignedToId,
             status: WorkOrderStatus.Pending,
-            description: `${vehicleInfo ? `Vehículo: ${vehicleInfo}. ` : ''}${problemDescription}`,
+            description: `${vehicleYear ? `Vehículo: ${vehicleYear}. ` : ''}${vehicleMake ? `Marca: ${vehicleMake}. ` : ''}${vehicleModel ? `Modelo: ${vehicleModel}. ` : ''}${vehicleMileage ? `Kilometraje: ${vehicleMileage}. ` : ''}${problemDescription}`,
             services: addedServices.map(({ id, ...rest }) => ({ ...rest, description: rest.description, price: rest.price })),
             items: addedItems.map(({ productName, ...rest }) => ({ ...rest, productId: rest.productId, quantity: rest.quantity, unitPrice: rest.unitPrice })),
             total: quoteTotals.total,
@@ -186,12 +196,83 @@ const NewWorkOrder: React.FC = () => {
                                 {clients.map(client => <option key={client.id} value={client.id}>{client.first_name} {client.last_name}</option>)}
                             </select>
                         </FormRow>
-                        <FormRow label="Información del Vehículo (Opcional)">
-                            <input type="text" placeholder="Ej: Toyota Hilux 2021" value={vehicleInfo} onChange={e => setVehicleInfo(e.target.value)} className={commonInputClass} />
-                        </FormRow>
-                        <FormRow label="Descripción del Problema / Trabajo a Realizar">
-                            <textarea value={problemDescription} onChange={e => setProblemDescription(e.target.value)} className={commonInputClass} rows={3} placeholder="El cliente reporta un ruido en el motor..."></textarea>
-                        </FormRow>
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <FormRow label="Año del Vehículo">
+                                    <input 
+                                        type="text" 
+                                        placeholder="Ej: 2021" 
+                                        value={vehicleYear} 
+                                        onChange={e => setVehicleYear(e.target.value)}
+                                        className={commonInputClass} 
+                                    />
+                                </FormRow>
+                                <FormRow label="Marca">
+                                    <input 
+                                        type="text" 
+                                        placeholder="Ej: Toyota" 
+                                        value={vehicleMake} 
+                                        onChange={e => setVehicleMake(e.target.value)}
+                                        className={commonInputClass} 
+                                    />
+                                </FormRow>
+                                <FormRow label="Modelo">
+                                    <input 
+                                        type="text" 
+                                        placeholder="Ej: Hilux" 
+                                        value={vehicleModel} 
+                                        onChange={e => setVehicleModel(e.target.value)}
+                                        className={commonInputClass} 
+                                    />
+                                </FormRow>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormRow label="Kilometraje">
+                                    <input 
+                                        type="number" 
+                                        placeholder="Ej: 12345" 
+                                        value={vehicleMileage} 
+                                        onChange={e => setVehicleMileage(e.target.value)}
+                                        className={commonInputClass} 
+                                    />
+                                </FormRow>
+                                <FormRow label="Nivel de gasolina">
+                                    <select 
+                                        value={fuelLevel} 
+                                        onChange={e => setFuelLevel(e.target.value)}
+                                        className={commonInputClass}
+                                    >
+                                        <option value="">Seleccionar...</option>
+                                        <option value="empty">Vacío</option>
+                                        <option value="quarter">1/4</option>
+                                        <option value="half">1/2</option>
+                                        <option value="three-quarters">3/4</option>
+                                        <option value="full">Lleno</option>
+                                    </select>
+                                </FormRow>
+                            </div>
+
+                            <FormRow label="Descripción del Problema / Trabajo a Realizar">
+                                <textarea 
+                                    value={problemDescription} 
+                                    onChange={e => setProblemDescription(e.target.value)}
+                                    className={commonInputClass} 
+                                    rows={3}
+                                    placeholder="El cliente reporta un ruido en el motor..."
+                                />
+                            </FormRow>
+
+                            <FormRow label="Diagnóstico Inicial">
+                                <textarea 
+                                    value={diagnosis} 
+                                    onChange={e => setDiagnosis(e.target.value)}
+                                    className={commonInputClass} 
+                                    rows={2}
+                                    placeholder="Diagnóstico preliminar..."
+                                />
+                            </FormRow>
+                        </div>
                     </div>
 
                     <div className="bg-surface rounded-xl shadow-lg p-6">
@@ -243,9 +324,10 @@ const NewWorkOrder: React.FC = () => {
                     </div>
                     <div className="bg-surface rounded-xl shadow-lg p-6 space-y-4">
                         <h2 className="text-xl font-semibold text-gray-700 border-b pb-3 mb-4">Acciones</h2>
-                        <FormRow label="Asignar a Mecánico">
-                            <select value={assignedToId} onChange={e => setAssignedToId(e.target.value)} className={commonInputClass} required>
-                                {users.length > 0 ? users.map(user => <option key={user.id} value={user.id}>{user.name}</option>) : <option disabled>No hay mecánicos disponibles</option>}
+                        <FormRow label="Asignacion de trabajo">
+                            <select value={assignedToId} onChange={handleAssignToChange} className={commonInputClass} required>
+                                <option value="">Seleccione un colaborador...</option>
+                                {users.length > 0 ? users.map(user => <option key={user.id} value={user.id}>{user.full_name}</option>) : <option disabled>No hay colaboradores disponibles</option>}
                             </select>
                         </FormRow>
                         <Button onClick={handleSubmit} isLoading={isSubmitting} className="w-full" disabled={!selectedClientId || (addedServices.length === 0 && addedItems.length === 0)}>
