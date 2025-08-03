@@ -1,36 +1,52 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { supabase } from '../services/supabase';
-import { WorkOrder, WorkOrderStatus } from '../types';
+import { Client, Profiles, WorkOrders, WorkOrderStatus } from '../types';
 import Button from '../components/common/Button';
 import { PlusIcon, SearchIcon } from '../utils/icons';
 import { useNavigate } from 'react-router-dom';
+import { workOrderService, clientService, userService } from '../services/supabase';
 
 const WorkOrders: React.FC = () => {
-    const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
+    const [workOrders, setWorkOrders] = useState<WorkOrders[]>([]);
     const [loading, setLoading] = useState(true);
+    const [clients, setClients] = useState<Client[]>([]);
+    const [users, setUsers] = useState<Profiles[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const navigate = useNavigate();
 
     useEffect(() => {
         const fetchWorkOrders = async () => {
-            setLoading(true);
-            const { data, error } = await supabase.from('work_orders').select('*');
-            if (error) {
-                console.error('Error fetching work orders:', error);
-            } else if (data) {
-                setWorkOrders(data as any[]); // The mock returns populated data
+            try {
+                setLoading(true);
+
+                const [clientsRes, workOrdersRes, profilesRes] = await Promise.all([
+                    clientService.getAll(),
+                    workOrderService.getAll(),
+                    userService.getAll()
+                ]);
+
+                if (clientsRes.data) setClients(clientsRes.data as Client[]);
+                if (workOrdersRes.data) setWorkOrders(workOrdersRes.data as WorkOrders[]);
+                if (profilesRes.data) {
+                    const mechanics = (profilesRes.data as Profiles[]).filter((u: Profiles) => u.role === 'staff');
+                    setUsers(mechanics as Profiles[]);
+                }
+                
+
+            } catch (error) {
+                console.error("Error fetching data for work orders:", error);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
         fetchWorkOrders();
     }, []);
 
     const filteredWorkOrders = useMemo(() => {
         return workOrders.filter(wo =>
-            wo.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (wo as any).clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            wo.description.toLowerCase().includes(searchTerm.toLowerCase())
+            wo.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            clients.find(c => c.id === wo.client_id)?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            wo.problem_description?.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [workOrders, searchTerm]);
 
@@ -91,16 +107,16 @@ const WorkOrders: React.FC = () => {
                             <tbody className="bg-white divide-y divide-gray-200">
                                 {filteredWorkOrders.map((wo) => (
                                     <tr key={wo.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary-600 hover:underline cursor-pointer">{wo.orderNumber}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{(wo as any).clientName}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{(wo as any).assignedToName}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary-600 hover:underline cursor-pointer">{wo.id}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{clients.find(c => c.id === wo.client_id)?.first_name}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{users.find(u => u.id === wo.profile_id)?.full_name}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(wo.status)}`}>
                                                 {wo.status}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${wo.total?.toFixed(2) || '0.00'}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(wo.createdAt).toLocaleDateString()}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(wo.created_at).toLocaleDateString()}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <Button variant="secondary" className="text-xs py-1 px-3">Ver</Button>
                                         </td>

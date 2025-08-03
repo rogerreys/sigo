@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Form, useNavigate } from 'react-router-dom';
-import { supabase } from '../services/supabase';
-import { Client, Product, Profiles, Service, WorkOrderItem, WorkOrderStatus } from '../types';
+import { Client, Product, Profiles, Service, WorkOrderItem } from '../types';
 import Button from '../components/common/Button';
 import { XCircleIcon } from '../utils/icons';
-import { clientService, productService, userService } from '../services/supabase';
+import { clientService, productService, userService, workOrderItemService, workOrderService } from '../services/supabase';
+import { WorkOrderStatus, WorkOrders, WorkOrderItems } from '../types';
 
 // A small helper component for form rows
 const FormRow: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
@@ -56,9 +56,6 @@ const NewWorkOrder: React.FC = () => {
                     productService.getAll(),
                     userService.getAll(),
                 ]);
-                console.log("clientsRes: ", clientsRes.data);
-                console.log("productsRes: ", productsRes.data);
-                console.log("usersRes: ", usersRes.data);
 
                 if (clientsRes.data) setClients(clientsRes.data as Client[]);
                 if (productsRes.data) setProducts(productsRes.data as Product[]);
@@ -138,7 +135,9 @@ const NewWorkOrder: React.FC = () => {
         return { servicesTotal, itemsTotal, subtotal, tax, total, taxRate };
     }, [addedServices, addedItems]);
 
-    const handleSubmit = async () => {
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
         if (!selectedClientId) {
             alert('Por favor, seleccione un cliente.');
             return;
@@ -149,17 +148,103 @@ const NewWorkOrder: React.FC = () => {
         }
 
         setIsSubmitting(true);
-        const newWorkOrderData = {
-            clientId: selectedClientId,
-            assignedTo: assignedToId,
-            status: WorkOrderStatus.Pending,
-            description: `${vehicleYear ? `Vehículo: ${vehicleYear}. ` : ''}${vehicleMake ? `Marca: ${vehicleMake}. ` : ''}${vehicleModel ? `Modelo: ${vehicleModel}. ` : ''}${vehicleMileage ? `Kilometraje: ${vehicleMileage}. ` : ''}${problemDescription}`,
-            services: addedServices.map(({ id, ...rest }) => ({ ...rest, description: rest.description, price: rest.price })),
-            items: addedItems.map(({ productName, ...rest }) => ({ ...rest, productId: rest.productId, quantity: rest.quantity, unitPrice: rest.unitPrice })),
-            total: quoteTotals.total,
-        };
 
-        const { error } = await supabase.from('work_orders').insert(newWorkOrderData);
+        try {
+            // 2. Create the work order data with proper types
+            const newWorkOrderData: WorkOrders = {
+                client_id: selectedClientId,
+                profile_id: assignedToId,
+                vehicle_year: vehicleYear ? parseInt(vehicleYear, 10) : 0,
+                odometer_reading: Number(vehicleMileage) || 0,
+                vehicle_make: vehicleMake || '',
+                status: WorkOrderStatus.Pending || 'pending',
+                vehicle_model: vehicleModel || '',
+                fuel_level: fuelLevel || '',
+                problem_description: problemDescription || '',
+                diagnostic_notes: diagnosis || '',
+                tax_rate: quoteTotals.taxRate,
+                tax_amount: quoteTotals.tax,
+                grand_total: quoteTotals.subtotal,
+                total: quoteTotals.total,
+                //work_order_items_id: workOrderId
+            };
+
+            // 3. Create the work order
+            const { data: workOrder, error: workOrderError } = await workOrderService.create(newWorkOrderData);
+            
+            if (workOrderError) {
+                throw workOrderError;
+            }
+
+            if (!workOrder) {
+                throw new Error('No se pudo crear la orden de trabajo');
+            }
+            
+            // 1. First, create the work order with a unique ID
+            const workOrderItemId = crypto.randomUUID();
+            const workOrderId = workOrder.id;                        
+
+            // 4. Add services to the work order
+            for (const service of addedServices) {
+                const serviceItem: WorkOrderItems = {
+                    service_description: service.description,
+                    service_price: service.price,
+                    work_order_id: workOrderItemId,
+                    product_id: null,
+                    product_quantity: null,
+                    product_unit_price: null
+                };
+
+                const { error } = await workOrderItemService.addItem(serviceItem);
+
+                if (error) {
+                    console.error('Error adding service to work order:', error);
+                    throw new Error(`Error al añadir el servicio: ${error.message}`);
+                }
+            }
+
+            // 5. Add items to the work order
+            for (const item of addedItems) {
+                const productItem = {
+                    product_id: item.productId,
+                    product_quantity: item.quantity,
+                    product_unit_price: item.unitPrice,
+                    work_order_id: workOrderItemId,
+                    service_description: null,
+                    service_price: null
+                };
+
+                const { error } = await workOrderItemService.addItem(productItem);
+
+                if (error) {
+                    console.error('Error adding item to work order:', error);
+                    throw new Error(`Error al añadir el repuesto: ${error.message}`);
+                }
+            }
+
+            const { error } = await workOrderService.update(workOrderId, { work_order_items_id: workOrderItemId });
+            if (error) {
+                console.error('Error updating work order:', error);
+                throw new Error(`Error al actualizar la orden de trabajo: ${error.message}`);
+            }
+
+            // 6. Show success message and navigate
+            alert('Orden de trabajo creada exitosamente');
+            navigate('/work-orders');
+
+        } catch (error) {
+            console.error('Error creating work order:', error);
+            alert(`Error al crear la orden de trabajo: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+        } finally {
+            setIsSubmitting(false);
+        }
+        /*
+        const { error } = await workOrderService.create(newWorkOrderData);
+        if (error) {
+            console.error('Error creating work order:', error);
+            alert(`Error al crear la orden: ${error.message}`);
+            return;
+        }
 
         setIsSubmitting(false);
         if (error) {
@@ -169,6 +254,7 @@ const NewWorkOrder: React.FC = () => {
             alert('Orden de trabajo creada con éxito.');
             navigate('/work-orders');
         }
+            */
     };
 
     const commonInputClass = "block w-full bg-gray-50 border border-gray-300 rounded-md py-2 px-3 text-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500";
@@ -199,47 +285,47 @@ const NewWorkOrder: React.FC = () => {
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <FormRow label="Año del Vehículo">
-                                    <input 
-                                        type="text" 
-                                        placeholder="Ej: 2021" 
-                                        value={vehicleYear} 
+                                    <input
+                                        type="number"
+                                        placeholder="Ej: 2021"
+                                        value={vehicleYear}
                                         onChange={e => setVehicleYear(e.target.value)}
-                                        className={commonInputClass} 
+                                        className={commonInputClass}
                                     />
                                 </FormRow>
                                 <FormRow label="Marca">
-                                    <input 
-                                        type="text" 
-                                        placeholder="Ej: Toyota" 
-                                        value={vehicleMake} 
+                                    <input
+                                        type="text"
+                                        placeholder="Ej: Toyota"
+                                        value={vehicleMake}
                                         onChange={e => setVehicleMake(e.target.value)}
-                                        className={commonInputClass} 
+                                        className={commonInputClass}
                                     />
                                 </FormRow>
                                 <FormRow label="Modelo">
-                                    <input 
-                                        type="text" 
-                                        placeholder="Ej: Hilux" 
-                                        value={vehicleModel} 
+                                    <input
+                                        type="text"
+                                        placeholder="Ej: Hilux"
+                                        value={vehicleModel}
                                         onChange={e => setVehicleModel(e.target.value)}
-                                        className={commonInputClass} 
+                                        className={commonInputClass}
                                     />
                                 </FormRow>
                             </div>
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FormRow label="Kilometraje">
-                                    <input 
-                                        type="number" 
-                                        placeholder="Ej: 12345" 
-                                        value={vehicleMileage} 
+                                    <input
+                                        type="number"
+                                        placeholder="Ej: 12345"
+                                        value={vehicleMileage}
                                         onChange={e => setVehicleMileage(e.target.value)}
-                                        className={commonInputClass} 
+                                        className={commonInputClass}
                                     />
                                 </FormRow>
                                 <FormRow label="Nivel de gasolina">
-                                    <select 
-                                        value={fuelLevel} 
+                                    <select
+                                        value={fuelLevel}
                                         onChange={e => setFuelLevel(e.target.value)}
                                         className={commonInputClass}
                                     >
@@ -254,20 +340,20 @@ const NewWorkOrder: React.FC = () => {
                             </div>
 
                             <FormRow label="Descripción del Problema / Trabajo a Realizar">
-                                <textarea 
-                                    value={problemDescription} 
+                                <textarea
+                                    value={problemDescription}
                                     onChange={e => setProblemDescription(e.target.value)}
-                                    className={commonInputClass} 
+                                    className={commonInputClass}
                                     rows={3}
                                     placeholder="El cliente reporta un ruido en el motor..."
                                 />
                             </FormRow>
 
                             <FormRow label="Diagnóstico Inicial">
-                                <textarea 
-                                    value={diagnosis} 
+                                <textarea
+                                    value={diagnosis}
                                     onChange={e => setDiagnosis(e.target.value)}
-                                    className={commonInputClass} 
+                                    className={commonInputClass}
                                     rows={2}
                                     placeholder="Diagnóstico preliminar..."
                                 />

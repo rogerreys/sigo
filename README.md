@@ -16,3 +16,10 @@ This contains everything you need to run your app locally.
 
 # GENERIC types
 `npx supabase gen types typescript --project-id acwppojhvjykdalquhhd > app/types/supabase.ts`
+
+# Describe tables
+SELECT 
+column_name,
+data_type, character_maximum_length, column_default, is_nullable
+FROM information_schema.columns
+WHERE table_name = 'work_order_items';

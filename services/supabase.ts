@@ -203,7 +203,7 @@ export const userService = {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuario no autenticado");
-      
+
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
@@ -357,45 +357,36 @@ export const profileService = {
   getAll: async () => {
     try {
       const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('full_name', { ascending: true });
+        .from("profiles")
+        .select("*")
+        .order("full_name", { ascending: true });
 
       if (error) throw error;
       return { data, error: null };
     } catch (error) {
-      return handleError(error, 'profileService.getAll');
+      return handleError(error, "profileService.getAll");
     }
   },
 
   // Obtener perfiles del mismo grupo
   getGroupMembers: async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuario no autenticado');
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuario no autenticado");
 
       // Primero obtenemos el grupo del usuario actual
-      const { data: currentUser } = await supabase
-        .from('profiles')
-        .select('group_id')
-        .eq('id', user.id)
+      const { data , error } = await supabase
+        .from("profiles")
+        .select("group_id")
+        .eq("id", user.id)
         .single();
-
-      if (!currentUser?.group_id) {
-        return { data: [], error: null };
-      }
-
-      // Luego obtenemos todos los perfiles del mismo grupo
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*, roles(*), groups(*)')
-        .eq('group_id', currentUser.group_id)
-        .order('full_name', { ascending: true });
 
       if (error) throw error;
       return { data, error: null };
     } catch (error) {
-      return handleError(error, 'profileService.getGroupMembers');
+      return handleError(error, "profileService.getGroupMembers");
     }
   },
 
@@ -403,130 +394,133 @@ export const profileService = {
   getById: async (id: string) => {
     try {
       const { data, error } = await supabase
-        .from('profiles')
-        .select('*, roles(*), groups(*)')
-        .eq('id', id)
+        .from("profiles")
+        .select("*, roles(*), groups(*)")
+        .eq("id", id)
         .single();
 
       if (error) throw error;
       return { data, error: null };
     } catch (error) {
-      return handleError(error, 'profileService.getById');
+      return handleError(error, "profileService.getById");
     }
   },
 
   // Obtener perfil del usuario actual
   getCurrentUserProfile: async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuario no autenticado');
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuario no autenticado");
 
       const { data, error } = await supabase
-        .from('profiles')
-        .select('*, roles(*), groups(*)')
-        .eq('id', user.id)
+        .from("profiles")
+        .select("*, roles(*), groups(*)")
+        .eq("id", user.id)
         .single();
 
       if (error) throw error;
       return { data, error: null };
     } catch (error) {
-      return handleError(error, 'profileService.getCurrentUserProfile');
+      return handleError(error, "profileService.getCurrentUserProfile");
     }
   },
 
   // Crear un nuevo perfil
   create: async (
     profileData: Omit<
-      Tables['profiles']['Insert'],
-      'id' | 'created_at' | 'updated_at'
+      Tables["profiles"]["Insert"],
+      "id" | "created_at" | "updated_at"
     >
   ) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuario no autenticado');
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuario no autenticado");
 
       // Verificar si el usuario tiene permiso para asignar el grupo
       if (profileData.group_id) {
         const { data: currentUser } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
           .single();
 
         // Solo administradores pueden asignar grupos
-        if (currentUser?.role !== 'admin') {
+        if (currentUser?.role !== "admin") {
           delete profileData.group_id;
         }
       }
 
       const { data, error } = await supabase
-        .from('profiles')
+        .from("profiles")
         .insert({
           ...profileData,
           id: user.id, // Usar el ID del usuario autenticado
-          email: user.email || '' // Asegurar que el email esté presente
+          email: user.email || "", // Asegurar que el email esté presente
         })
-        .select('*, roles(*), groups(*)')
+        .select("*, roles(*), groups(*)")
         .single();
 
       if (error) throw error;
       return { data, error: null };
     } catch (error) {
-      return handleError(error, 'profileService.create');
+      return handleError(error, "profileService.create");
     }
   },
 
   // Actualizar un perfil
   update: async (
     id: string,
-    profileData: Partial<Tables['profiles']['Update']>
+    profileData: Partial<Tables["profiles"]["Update"]>
   ) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuario no autenticado');
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuario no autenticado");
 
       // Verificar permisos
       const { data: currentUser } = await supabase
-        .from('profiles')
-        .select('role, group_id')
-        .eq('id', user.id)
+        .from("profiles")
+        .select("role, group_id")
+        .eq("id", user.id)
         .single();
 
       // Solo administradores pueden cambiar roles y grupos
-      if (currentUser?.role !== 'admin') {
+      if (currentUser?.role !== "admin") {
         delete profileData.role_id;
         delete profileData.group_id;
       }
 
       const { data, error } = await supabase
-        .from('profiles')
+        .from("profiles")
         .update({
           ...profileData,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', id)
-        .select('*, roles(*), groups(*)')
+        .eq("id", id)
+        .select("*, roles(*), groups(*)")
         .single();
 
       if (error) throw error;
       return { data, error: null };
     } catch (error) {
-      return handleError(error, 'profileService.update');
+      return handleError(error, "profileService.update");
     }
   },
 
   // Eliminar un perfil (solo para administradores)
   delete: async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.from("profiles").delete().eq("id", id);
 
       if (error) throw error;
       return { error: null };
     } catch (error) {
-      return handleError(error, 'profileService.delete');
+      return handleError(error, "profileService.delete");
     }
   },
 
@@ -534,21 +528,21 @@ export const profileService = {
   updateUserGroup: async (userId: string, groupId: string | null) => {
     try {
       const { data, error } = await supabase
-        .from('profiles')
-        .update({ 
+        .from("profiles")
+        .update({
           group_id: groupId,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
-        .eq('id', userId)
-        .select('*, roles(*), groups(*)')
+        .eq("id", userId)
+        .select("*, roles(*), groups(*)")
         .single();
 
       if (error) throw error;
       return { data, error: null };
     } catch (error) {
-      return handleError(error, 'profileService.updateUserGroup');
+      return handleError(error, "profileService.updateUserGroup");
     }
-  }
+  },
 };
 // Servicio para roles
 export const roleService = {
@@ -573,20 +567,16 @@ export const workOrderService = {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuario no autenticado");
+      const { data: groupMembers } = await profileService.getGroupMembers();
+      const groupId = groupMembers?.group_id;
+      
+      if (!groupId) throw new Error("El usuario no pertenece a ningún grupo");
 
       const { data, error } = await supabase
         .from("work_orders")
-        .select(
-          `
-          *,
-          clients (*),
-          work_order_items (
-            *,
-            products (*)
-          )
-        `
-        )
+        .select("*")
         .eq("user_id", user.id)
+        .eq("group_id", groupId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -627,12 +617,13 @@ export const workOrderService = {
       Tables["work_orders"]["Insert"],
       | "id"
       | "user_id"
+      | "group_id"
+      | "completed_at"
+      | "discount_amount"
+      | "priority"
       | "created_at"
       | "updated_at"
       | "status"
-      | "total"
-      | "tax_amount"
-      | "grand_total"
     >
   ) => {
     try {
@@ -641,18 +632,31 @@ export const workOrderService = {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuario no autenticado");
 
+      const { data: groupMembers } = await profileService.getGroupMembers();
+      const groupId = groupMembers?.group_id;
+
+      if (!groupId) {
+        throw new Error("No se pudo determinar el grupo del usuario");
+      }
+
+      // Create the work order data with all required fields and defaults
+      const now = new Date().toISOString();
+      const { work_order_items_id, ...orderDataWithoutItems } = orderData as any;
+      
+      const workOrderData: Omit<Tables["work_orders"]["Insert"], 'work_order_items_id'> & { work_order_items_id?: string } = {
+        ...orderDataWithoutItems,
+        user_id: user.id,
+        group_id: groupId,
+        discount_amount: 0, // Default value
+        priority: "medium", // Default value
+        created_at: now,
+        updated_at: now,
+        completed_at: null,
+      };
+
       const { data, error } = await supabase
         .from("work_orders")
-        .insert([
-          {
-            ...orderData,
-            user_id: user.id,
-            status: "pending",
-            total: 0,
-            tax_amount: 0,
-            grand_total: 0,
-          },
-        ])
+        .insert(workOrderData)
         .select()
         .single();
 
@@ -738,11 +742,14 @@ export const workOrderService = {
 // Servicio para ítems de órdenes de trabajo
 export const workOrderItemService = {
   // Agregar un ítem a una orden de trabajo
+  // Agregar un ítem a una orden de trabajo
   addItem: async (
-    workOrderId: string,
     itemData: Omit<
       Tables["work_order_items"]["Insert"],
-      "id" | "work_order_id" | "created_at" | "total_price" | "user_id"
+      | "user_id"
+      | "group_id"
+      | "created_at"
+      | "updated_at"
     >
   ) => {
     try {
@@ -751,23 +758,21 @@ export const workOrderItemService = {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuario no autenticado");
 
-      // Calcular el precio total basado en cantidad, precio unitario y descuento
-      const totalPrice =
-        (itemData.quantity || 1) *
-        (itemData.unit_price || 0) *
-        (1 - (itemData.discount_percent || 0) / 100);
+      const { data: groupMembers } = await profileService.getGroupMembers();
+      if (!groupMembers?.group_id) {
+        throw new Error("El usuario no pertenece a ningún grupo");
+      }
 
       const { data, error } = await supabase
         .from("work_order_items")
         .insert([
           {
             ...itemData,
-            work_order_id: workOrderId,
             user_id: user.id,
-            total_price: totalPrice,
+            group_id: groupMembers.group_id
           },
         ])
-        .select("*, products(*)")
+        .select()
         .single();
 
       if (error) throw error;
@@ -801,7 +806,8 @@ export const workOrderItemService = {
         // Usar los valores actualizados o los existentes con valores por defecto
         const quantity = itemData.quantity ?? currentItem.quantity ?? 0;
         const unitPrice = itemData.unit_price ?? currentItem.unit_price ?? 0;
-        const discountPercent = itemData.discount_percent ?? currentItem.discount_percent ?? 0;
+        const discountPercent =
+          itemData.discount_percent ?? currentItem.discount_percent ?? 0;
 
         // Calcular nuevo total con valores por defecto seguros
         const totalPrice = quantity * unitPrice * (1 - discountPercent / 100);

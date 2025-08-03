@@ -1,8 +1,7 @@
-
 export interface User {
   id: string;
   email: string;
-  role: 'Administrador' | 'Mecánico' | 'Cajero';
+  role: "Administrador" | "Mecánico" | "Cajero";
   name: string;
 }
 
@@ -12,7 +11,7 @@ export interface Client {
   email: string;
   phone: string;
   address: string;
-  createdAt: string;  
+  createdAt: string;
 }
 
 export interface Product {
@@ -27,47 +26,71 @@ export interface Product {
 }
 
 export interface Service {
-    id: string;
-    description: string;
-    price: number;
+  id: string;
+  description: string;
+  price: number;
 }
 
 export interface WorkOrderItem {
-    productId: string;
-    quantity: number;
-    unitPrice: number;
+  productId: string;
+  quantity: number;
+  unitPrice: number;
 }
 
 export enum WorkOrderStatus {
-    Pending = 'Pendiente',
-    InProgress = 'En Progreso',
-    Completed = 'Completado',
-    Billed = 'Facturado',
-    Cancelled = 'Cancelado'
+  Pending = "pending",
+  InProgress = "in_progress",
+  Completed = "completed",
+  Billed = "billed",
+  Cancelled = "cancelled",
 }
 
-export interface WorkOrder {
-  id: string;
-  orderNumber: string;
-  clientId: string;
-  assignedTo: string; // userId
+export interface WorkOrderItems {
+  id?: string;
+  product_id?: string | null;
+  user_id?: string;
+  group_id?: string;
+  work_order_id?: string;
+  product_quantity?: number | null;
+  product_unit_price?: number | null;
+  service_price?: number | null;
+  service_description?: string | null;
+}
+export interface WorkOrders {
+  id?: string;
+  client_id: string;
+  profile_id: string;
+  grand_total: number;
+  created_at?: string;
+  updated_at?: string;
+  completed_at?: string;
+  user_id?: string;
+  group_id?: string;
+  work_order_items_id?: string;
+  vehicle_year: number;
+  odometer_reading: number;
   status: WorkOrderStatus;
-  description: string;
-  services: Service[];
-  items: WorkOrderItem[];
-  createdAt: string;
-  completedAt?: string;
-  total?: number;
+  total: number;
+  tax_rate: number;
+  tax_amount: number;
+  discount_amount?: number;
+  vehicle_identification?: string;
+  vehicle_make: string;
+  vehicle_model: string;
+  priority?: string;
+  problem_description: string;
+  fuel_level: string;
+  diagnostic_notes: string;
 }
 
 export interface Profiles {
-    id: number;
-    email: string;
-    full_name: string;
-    role: string;
-    created_at: string;
-    updated_at: string;
-    role_id: number;
-    user_id: number;
-    group_id: number;
+  id: number;
+  email: string;
+  full_name: string;
+  role: string;
+  created_at: string;
+  updated_at: string;
+  role_id: number;
+  user_id: number;
+  group_id: number;
 }
