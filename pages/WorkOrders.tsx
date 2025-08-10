@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { Client, Profiles, WorkOrders, WorkOrderStatus } from '../types';
+import { Client, Profiles, WorkOrders, WorkOrderStatus, WorkOrderStatusFront } from '../types';
 import Button from '../components/common/Button';
 import { PlusIcon, SearchIcon, CheckCircleIcon, ClockIcon, PauseCircleIcon, DocumentTextIcon, XCircleIcon, FilterIcon, ChevronDownIcon } from '../utils/icons';
 import { useNavigate } from 'react-router-dom';
@@ -107,6 +107,10 @@ const WorkOrders: React.FC = () => {
         return classes[status] || 'bg-gray-200 text-gray-800';
     };
 
+    const getStatusDisplayName = (status: WorkOrderStatus) => {
+        return WorkOrderStatusFront[status as keyof typeof WorkOrderStatusFront] || status;
+    };
+
     const handleViewDetails = (order: WorkOrder) => {
         setSelectedWorkOrder(order);
         setIsModalOpen(true);
@@ -154,7 +158,7 @@ const WorkOrders: React.FC = () => {
                     <div key={status} className="bg-surface rounded-xl shadow-md p-4 flex items-center">
                         <div className="mr-4">{icon}</div>
                         <div>
-                            <p className="text-sm text-gray-500 font-medium">{status}</p>
+                            <p className="text-sm text-gray-500 font-medium">{getStatusDisplayName(status as WorkOrderStatus)}</p>
                             <p className="text-2xl font-bold text-gray-800">{statusCounts[status]}</p>
                         </div>
                     </div>
@@ -213,7 +217,7 @@ const WorkOrders: React.FC = () => {
                                                 className={`block px-4 py-2 text-sm ${selectedStatus === status ? 'bg-gray-100 text-gray-900' : 'text-gray-700'} hover:bg-gray-100 hover:text-gray-900`}
                                                 role="menuitem"
                                             >
-                                                {status === 'All' ? 'Todos los Estados' : status}
+                                                {status === 'All' ? 'Todos los Estados' : getStatusDisplayName(status as WorkOrderStatus)}
                                             </a>
                                         ))}
                                     </div>
@@ -247,7 +251,7 @@ const WorkOrders: React.FC = () => {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{users.find(u => u.id === wo.profile_id)?.full_name}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(wo.status)}`}>
-                                                {wo.status}
+                                                {getStatusDisplayName(wo.status)}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${wo.total?.toFixed(2) || '0.00'}</td>
