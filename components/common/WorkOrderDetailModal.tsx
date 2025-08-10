@@ -1,0 +1,166 @@
+
+import React, { useState, useEffect } from 'react';
+import { WorkOrders, WorkOrderStatus, WorkOrderStatusFront } from '../../types';
+import Button from '../common/Button';
+import { XIcon } from '../../utils/icons';
+
+interface WorkOrderDetailModalProps {
+    order: WorkOrders | null;
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (updatedOrder: WorkOrders) => Promise<void>;
+    isLoading: boolean;
+}
+
+const WorkOrderDetailModal: React.FC<WorkOrderDetailModalProps> = ({ order, isOpen, onClose, onSave, isLoading, client_name, assignedTo }) => {
+    const [editableOrder, setEditableOrder] = useState<WorkOrders | null>(null);
+
+    useEffect(() => {
+        if (order) {
+            setEditableOrder({ ...order });
+        }
+    }, [order]);
+
+    if (!isOpen || !editableOrder) return null;
+
+    const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const value = e.target.value;
+
+        if (Object.values(WorkOrderStatusFront).includes(value as WorkOrderStatusFront)) {
+            const statusKey = Object.entries(WorkOrderStatusFront)
+                .find(([key, val]) => val === value)?.[0] as keyof typeof WorkOrderStatusFront;
+
+            setEditableOrder(prev => prev ? { ...prev, status: statusKey as WorkOrderStatus } : null);
+        }
+    };
+
+    const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setEditableOrder(prev => prev ? { ...prev, description: e.target.value } : null);
+    }
+
+    const handleSaveClick = () => {
+        if (editableOrder) {
+            onSave(editableOrder);
+        }
+    };
+
+    const formatCurrency = (amount?: number) => `$${(amount || 0).toFixed(2)}`;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4 transition-opacity duration-300"
+            aria-labelledby="modal-title"
+            role="dialog"
+            aria-modal="true">
+            <div className="bg-surface rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col transform transition-all duration-300 scale-95 opacity-0 animate-fade-in-scale">
+                <style>{`
+                    @keyframes fade-in-scale {
+                        0% { opacity: 0; transform: scale(0.95); }
+                        100% { opacity: 1; transform: scale(1); }
+                    }
+                    .animate-fade-in-scale {
+                        animation: fade-in-scale 0.3s forwards ease-out;
+                    }
+                `}</style>
+                <div className="flex justify-between items-center p-6 border-b border-gray-200">
+                    <h2 id="modal-title" className="text-2xl font-bold text-gray-800">
+                        Orden de Trabajo: <span className="text-primary-600">{editableOrder.id}</span>
+                    </h2>
+                    <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        <XIcon className="h-6 w-6 text-gray-600" />
+                    </button>
+                </div>
+
+                <div className="p-6 overflow-y-auto">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+                            <div>
+                                <label className="text-sm font-medium text-gray-500">Cliente</label>
+                                <p className="text-lg font-semibold text-gray-900">{client_name}</p>
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-gray-500">Asignado a</label>
+                                <p className="text-base text-gray-800">{assignedTo}</p>
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-gray-500">Fecha de Creación</label>
+                                <p className="text-base text-gray-800">{editableOrder.created_at?.toLocaleString()}</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+                            <div>
+                                <label htmlFor="status" className="text-sm font-medium text-gray-500 block mb-1">Estado</label>
+                                <select
+                                    id="status"
+                                    value={WorkOrderStatusFront[editableOrder.status]}
+                                    onChange={handleStatusChange}
+                                    className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                                >
+                                    {Object.values(WorkOrderStatusFront).map(status => (
+                                        <option key={status} value={status}>{status}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label htmlFor="description" className="text-sm font-medium text-gray-500 block mb-1">Descripción</label>
+                                <textarea
+                                    id="description"
+                                    rows={4}
+                                    value={editableOrder.diagnostic_notes}
+                                    onChange={handleDescriptionChange}
+                                    className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div>
+                            <h3 className="text-lg font-semibold text-gray-700 mb-2 border-b pb-2">Servicios</h3>
+                            {/*editableOrder.work_order_items_id.length > 0 ? (
+                                <ul className="space-y-2">
+                                    {editableOrder.work_order_items_id.map(service => (
+                                        <li key={service.id} className="flex justify-between items-center text-sm p-2 bg-white border rounded-md">
+                                            <span>{service.description}</span>
+                                            <span className="font-medium">{formatCurrency(service.price)}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : <p className="text-sm text-gray-500 p-2">No hay servicios asociados.</p>*/}
+                        </div>
+
+                        <div>
+                            <h3 className="text-lg font-semibold text-gray-700 mb-2 border-b pb-2">Repuestos / Items</h3>
+                            {/*editableOrder.items.length > 0 ? (
+                                <ul className="space-y-2">
+                                    {editableOrder.items.map((item, index) => (
+                                        <li key={`${item.productId}-${index}`} className="flex justify-between items-center text-sm p-2 bg-white border rounded-md">
+                                            <span>{item.quantity} x {item.productName}</span>
+                                            <span className="font-medium">{formatCurrency(item.quantity * item.unitPrice)}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : <p className="text-sm text-gray-500 p-2">No hay repuestos asociados.</p>*/}
+                        </div>
+                    </div>
+
+                    <div className="mt-6 pt-4 border-t text-right">
+                        <p className="text-lg font-semibold text-gray-600">Total</p>
+                        <p className="text-3xl font-bold text-gray-800">{formatCurrency(editableOrder.total)}</p>
+                    </div>
+                </div>
+
+                <div className="flex justify-end items-center p-6 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+                    <Button variant="secondary" onClick={onClose} className="mr-4" disabled={isLoading}>
+                        Cancelar
+                    </Button>
+                    <Button onClick={handleSaveClick} isLoading={isLoading}>
+                        Guardar Cambios
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default WorkOrderDetailModal;

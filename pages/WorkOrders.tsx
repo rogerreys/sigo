@@ -5,6 +5,7 @@ import Button from '../components/common/Button';
 import { PlusIcon, SearchIcon } from '../utils/icons';
 import { useNavigate } from 'react-router-dom';
 import { workOrderService, clientService, userService } from '../services/supabase';
+import WorkOrderDetailModal from '../components/common/WorkOrderDetailModal';
 
 const WorkOrders: React.FC = () => {
     const [workOrders, setWorkOrders] = useState<WorkOrders[]>([]);
@@ -12,6 +13,11 @@ const WorkOrders: React.FC = () => {
     const [clients, setClients] = useState<Client[]>([]);
     const [users, setUsers] = useState<Profiles[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
+
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrders | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -61,6 +67,38 @@ const WorkOrders: React.FC = () => {
         return classes[status] || 'bg-gray-200 text-gray-800';
     };
 
+    const handleViewDetails = (order: WorkOrder) => {
+        setSelectedWorkOrder(order);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        if (isSaving) return;
+        setIsModalOpen(false);
+        setSelectedWorkOrder(null);
+    };
+
+    const handleSaveWorkOrder = async (updatedOrder: WorkOrders) => {
+        setIsSaving(true);
+        console.log("updatedOrder: ", updatedOrder);
+        const { id, status, diagnostic_notes } = updatedOrder;
+
+        // The mock API only needs the changed fields + id
+        const { error } = await workOrderService.update(id, { id, status, diagnostic_notes });
+        
+        if (error) {
+            console.error('Error updating work order:', error.message);
+            // You could show an error toast/message to the user here
+        } else {
+            setWorkOrders(prevOrders => 
+                prevOrders.map(order => 
+                    order.id === id ? { ...order, status, diagnostic_notes } : order
+                )
+            );
+            handleCloseModal();
+        }
+        setIsSaving(false);
+    };
     return (
         <div>
             <div className="flex justify-between items-center mb-6">
@@ -107,7 +145,7 @@ const WorkOrders: React.FC = () => {
                             <tbody className="bg-white divide-y divide-gray-200">
                                 {filteredWorkOrders.map((wo) => (
                                     <tr key={wo.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary-600 hover:underline cursor-pointer">{wo.id}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary-600 hover:underline cursor-pointer" onClick={() => handleViewDetails(wo)}>{wo.id}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{clients.find(c => c.id === wo.client_id)?.first_name}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{users.find(u => u.id === wo.profile_id)?.full_name}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -118,7 +156,7 @@ const WorkOrders: React.FC = () => {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${wo.total?.toFixed(2) || '0.00'}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(wo.created_at).toLocaleDateString()}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <Button variant="secondary" className="text-xs py-1 px-3">Ver</Button>
+                                            <Button variant="secondary" className="text-xs py-1 px-3" onClick={() => handleViewDetails(wo)}>Ver</Button>
                                         </td>
                                     </tr>
                                 ))}
@@ -127,6 +165,15 @@ const WorkOrders: React.FC = () => {
                     </div>
                 )}
             </div>
+            <WorkOrderDetailModal
+                isOpen={isModalOpen}
+                order={selectedWorkOrder}
+                onClose={handleCloseModal}
+                onSave={handleSaveWorkOrder}
+                isLoading={isSaving}
+                client_name={clients.find(c => c.id === selectedWorkOrder?.client_id)?.first_name}
+                assignedTo={users.find(u => u.id === selectedWorkOrder?.profile_id)?.full_name}
+            />
         </div>
     );
 };

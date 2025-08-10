@@ -44,6 +44,13 @@ export enum WorkOrderStatus {
   Billed = "billed",
   Cancelled = "cancelled",
 }
+export enum WorkOrderStatusFront {
+  pending = "Pendiente",
+  in_progress = "En Proceso",
+  completed = "Completado",
+  billed = "Facturado",
+  cancelled = "Cancelado",
+}
 
 export interface WorkOrderItems {
   id?: string;
