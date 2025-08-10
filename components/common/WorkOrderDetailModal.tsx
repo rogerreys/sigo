@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { WorkOrders, WorkOrderStatus, WorkOrderStatusFront } from '../../types';
+import { WorkOrders, WorkOrderItems, Product, WorkOrderStatus, WorkOrderStatusFront } from '../../types';
 import Button from '../common/Button';
 import { XIcon } from '../../utils/icons';
+import { workOrderItemService, productService } from '../../services/supabase';
 
 interface WorkOrderDetailModalProps {
     order: WorkOrders | null;
@@ -14,10 +15,26 @@ interface WorkOrderDetailModalProps {
 
 const WorkOrderDetailModal: React.FC<WorkOrderDetailModalProps> = ({ order, isOpen, onClose, onSave, isLoading, client_name, assignedTo }) => {
     const [editableOrder, setEditableOrder] = useState<WorkOrders | null>(null);
+    const [workOrderItems, setWorkOrderItems] = useState<WorkOrderItems[]>([]);
+    const [productsItems, setProductsItems] = useState<Product[]>([]);
 
     useEffect(() => {
         if (order) {
             setEditableOrder({ ...order });
+
+            const fetchWorkOrderItems = async () => {
+                try {
+                    const items = await workOrderItemService.getItems(order?.work_order_items_id || '');
+                    const products = await productService.getAll();
+                    setWorkOrderItems(items.data as WorkOrderItems[] || []);
+                    setProductsItems(products.data as Product[] || []);
+                } catch (error) {
+                    console.error('Error fetching work order items:', error);
+                }
+            };
+
+            fetchWorkOrderItems();
+
         }
     }, [order]);
 
@@ -117,35 +134,45 @@ const WorkOrderDetailModal: React.FC<WorkOrderDetailModalProps> = ({ order, isOp
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div>
                             <h3 className="text-lg font-semibold text-gray-700 mb-2 border-b pb-2">Servicios</h3>
-                            {/*editableOrder.work_order_items_id.length > 0 ? (
-                                <ul className="space-y-2">
-                                    {editableOrder.work_order_items_id.map(service => (
-                                        <li key={service.id} className="flex justify-between items-center text-sm p-2 bg-white border rounded-md">
-                                            <span>{service.description}</span>
-                                            <span className="font-medium">{formatCurrency(service.price)}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            ) : <p className="text-sm text-gray-500 p-2">No hay servicios asociados.</p>*/}
+                            {
+
+                                workOrderItems.length > 0 ? (
+                                    <ul className="space-y-2">
+                                        {workOrderItems.map(orderItem => (
+                                            orderItem.service_price !== null && orderItem.service_price !== undefined && (
+                                                <li key={orderItem.id} className="flex justify-between items-center text-sm p-2 bg-white border rounded-md">
+                                                    <span>{orderItem.service_description}</span>
+                                                    <span className="font-medium">{formatCurrency(orderItem.service_price)}</span>
+                                                </li>
+                                            )
+                                        ))}
+                                    </ul>
+                                ) : <p className="text-sm text-gray-500 p-2">No hay servicios asociados.</p>
+                            }
                         </div>
 
                         <div>
                             <h3 className="text-lg font-semibold text-gray-700 mb-2 border-b pb-2">Repuestos / Items</h3>
-                            {/*editableOrder.items.length > 0 ? (
+                            {workOrderItems.length > 0 ? (
                                 <ul className="space-y-2">
-                                    {editableOrder.items.map((item, index) => (
-                                        <li key={`${item.productId}-${index}`} className="flex justify-between items-center text-sm p-2 bg-white border rounded-md">
-                                            <span>{item.quantity} x {item.productName}</span>
-                                            <span className="font-medium">{formatCurrency(item.quantity * item.unitPrice)}</span>
-                                        </li>
+                                    {workOrderItems.map((item, index) => (
+                                        item.product_quantity !== null && item.product_quantity !== undefined && item.product_unit_price !== null && item.product_unit_price !== undefined && (
+                                            <li key={`${item.product_id}-${index}`} className="flex justify-between items-center text-sm p-2 bg-white border rounded-md">
+                                                <span>{item.product_quantity} x {productsItems.find(p => p.id === item.product_id)?.name}</span>
+                                                <span className="font-medium">{formatCurrency(item.product_quantity * item.product_unit_price)}</span>
+                                            </li>
+                                        )
                                     ))}
                                 </ul>
-                            ) : <p className="text-sm text-gray-500 p-2">No hay repuestos asociados.</p>*/}
+                            ) : <p className="text-sm text-gray-500 p-2">No hay repuestos asociados.</p>}
                         </div>
                     </div>
 
                     <div className="mt-6 pt-4 border-t text-right">
-                        <p className="text-lg font-semibold text-gray-600">Total</p>
+                        <p className="text-lg font-semibold text-gray-600">Subtotal</p>
+                        <p className="text-3xl font-bold text-gray-800">{formatCurrency(editableOrder.grand_total)}</p>
+
+                        <p className="text-lg font-semibold text-gray-600">Total (IVA {editableOrder.tax_rate}% incluido)</p>
                         <p className="text-3xl font-bold text-gray-800">{formatCurrency(editableOrder.total)}</p>
                     </div>
                 </div>

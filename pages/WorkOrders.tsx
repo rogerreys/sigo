@@ -272,7 +272,7 @@ const WorkOrders: React.FC = () => {
                 onClose={handleCloseModal}
                 onSave={handleSaveWorkOrder}
                 isLoading={isSaving}
-                client_name={clients.find(c => c.id === selectedWorkOrder?.client_id)?.first_name}
+                client_name={clients.find(c => c.id === selectedWorkOrder?.client_id)?.first_name+" "+clients.find(c => c.id === selectedWorkOrder?.client_id)?.last_name}
                 assignedTo={users.find(u => u.id === selectedWorkOrder?.profile_id)?.full_name}
             />
         </div>
