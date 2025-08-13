@@ -303,9 +303,9 @@ create table public.roles (
 
 -- Insertar roles por defecto
 insert into public.roles (name, description) values 
-  ('admin', 'Administrador del sistema con acceso total'),
-  ('manager', 'Gerente con acceso a todas las operaciones excepto configuración del sistema'),
-  ('staff', 'Personal con acceso limitado a funciones básicas');
+  ('Administrador', 'Administrador del sistema con acceso total'),
+  ('Gerente', 'Gerente con acceso a todas las operaciones excepto configuración del sistema'),
+  ('Personal', 'Personal con acceso limitado a funciones básicas');
 
 -- Agregar columna role_id a la tabla profiles
 alter table public.profiles 

@@ -353,6 +353,16 @@ export const productService = {
 
 // Servicio para profiles
 export const profileService = {
+  deleteUserById: async (userId: string) => {
+    // IMPORTANT: This requires admin privileges.
+    // Ensure you have a Supabase client initialized with the service_role key.
+    const { data, error } = await supabase.auth.admin.deleteUser(userId);
+    if (error) {
+      console.error('Error deleting user:', error);
+      throw error;
+    }
+    return data;
+  },
   // Obtener todos los perfiles (solo para administradores)
   getAll: async () => {
     try {
@@ -435,34 +445,12 @@ export const profileService = {
     >
   ) => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuario no autenticado");
-
-      // Verificar si el usuario tiene permiso para asignar el grupo
-      if (profileData.group_id) {
-        const { data: currentUser } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-
-        // Solo administradores pueden asignar grupos
-        if (currentUser?.role !== "admin") {
-          delete profileData.group_id;
-        }
-      }
-
+      
       const { data, error } = await supabase
         .from("profiles")
         .insert({
-          ...profileData,
-          id: user.id, // Usar el ID del usuario autenticado
-          email: user.email || "", // Asegurar que el email esté presente
-        })
-        .select("*, roles(*), groups(*)")
-        .single();
+          ...profileData
+        });
 
       if (error) throw error;
       return { data, error: null };

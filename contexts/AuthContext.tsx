@@ -29,9 +29,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     checkSession();
   }, []);
 
-  const singUp = async (email: string, password?: string) => {
+  const singUp = async (email: string, password?: string, fullName?: string, phone?: string) => {
     setLoading(true);
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName, Phone: phone } } });
     if (data.user) {
       setUser(data.user);
     }
@@ -57,12 +57,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return { error };
   };
 
+  const deleteUserById = async (userId: string) => {
+    setLoading(true);
+    const { error } = await supabase.auth.admin.deleteUser(userId);
+    setUser(null);
+    setLoading(false);
+    return { error };
+  };
+
   const value = {
     user,
     loading,
     signIn,
     signOut,
     singUp,
+    deleteUserById,
   };
 
   return (

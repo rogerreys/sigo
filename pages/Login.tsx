@@ -2,42 +2,50 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import Button from '../components/common/Button';
+import { profileService } from '@/services/supabase';
+import { RoleService } from '@/types';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
   const [isLogin, setIsLogin] = useState(true);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, singUp } = useAuth();
+  const { signIn, singUp, deleteUserById } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    
+
     try {
       if (isLogin) {
         const { error } = await signIn(email, password);
         if (error) throw error;
       } else {
-        const { data, error } = await singUp(email, password);
+        const { data, error } = await singUp(email, password, fullName, phone);
         if (error) throw error;
         // Si el registro es exitoso, cambiamos al modo de inicio de sesión
-        profileService.create({
+        const { data: profileData, error: profileError } = await profileService.create({
+          id: data.user.id,
+          email: email,
+          full_name: fullName,
+          role: RoleService.administrador,
           user_id: data.user.id,
-          email: data.user.email,
-          full_name: data.user.user_metadata.full_name,
-          role_id: data.user.user_metadata.role_id,
-          role: data.user.user_metadata.role,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          phone: phone,
         });
+        if (profileError) {
+          await deleteUserById(data.user.id);
+          throw profileError;
+        }
+
         setIsLogin(true);
         setError('¡Registro exitoso! Por favor inicia sesión.');
       }
-      
+
       if (isLogin) {
         navigate('/dashboard');
       }
@@ -57,7 +65,7 @@ const Login: React.FC = () => {
             {isLogin ? 'Bienvenido de nuevo' : 'Crea una nueva cuenta'}
           </p>
         </div>
-        
+
         {error && (
           <div className="p-3 text-sm text-red-700 bg-red-100 rounded-md">
             {error}
@@ -65,9 +73,49 @@ const Login: React.FC = () => {
         )}
 
         <form className="space-y-4" onSubmit={handleSubmit}>
+          {!isLogin && (
+            <>
+              <div>
+                <label htmlFor="full_name" className="block text-sm font-medium text-gray-700">
+                  Nombre Completo
+                </label>
+                <input
+                  id="full_name"
+                  name="full_name"
+                  type="text"
+                  autoComplete="name"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="block w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="Ingresar Nombre Completo"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                  Teléfono
+                </label>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  autoComplete="tel"
+                  required
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="block w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="Ingresar Telefono"
+                  minLength={10}
+                  maxLength={10}
+                />
+              </div>
+            </>
+          )}
+
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Correo electrónico
+              Correo Electrónico
             </label>
             <input
               id="email"
@@ -78,7 +126,7 @@ const Login: React.FC = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="block w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
-              placeholder="correo@ejemplo.com"
+              placeholder="Ingresar Correo Electrónico"
             />
           </div>
 
@@ -126,8 +174,8 @@ const Login: React.FC = () => {
             }}
             className="font-medium text-primary-600 hover:text-primary-500 focus:outline-none"
           >
-            {isLogin 
-              ? '¿No tienes una cuenta? Regístrate' 
+            {isLogin
+              ? '¿No tienes una cuenta? Regístrate'
               : '¿Ya tienes una cuenta? Inicia sesión'}
           </button>
         </div>

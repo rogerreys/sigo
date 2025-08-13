@@ -5,6 +5,12 @@ export interface User {
   name: string;
 }
 
+export interface Role {
+  id: string;
+  name: string;
+  description: string;
+}
+
 export interface Client {
   id: string;
   name: string;
@@ -35,21 +41,6 @@ export interface WorkOrderItem {
   productId: string;
   quantity: number;
   unitPrice: number;
-}
-
-export enum WorkOrderStatus {
-  Pending = "pending",
-  InProgress = "in_progress",
-  Completed = "completed",
-  Billed = "billed",
-  Cancelled = "cancelled",
-}
-export enum WorkOrderStatusFront {
-  pending = "Pendiente",
-  in_progress = "En Proceso",
-  completed = "Completado",
-  billed = "Facturado",
-  cancelled = "Cancelado",
 }
 
 export interface WorkOrderItems {
@@ -100,4 +91,24 @@ export interface Profiles {
   role_id: number;
   user_id: number;
   group_id: number;
+}
+
+export enum WorkOrderStatus {
+  Pending = "pending",
+  InProgress = "in_progress",
+  Completed = "completed",
+  Billed = "billed",
+  Cancelled = "cancelled",
+}
+export enum WorkOrderStatusFront {
+  pending = "Pendiente",
+  in_progress = "En Proceso",
+  completed = "Completado",
+  billed = "Facturado",
+  cancelled = "Cancelado",
+}
+export enum RoleService {
+  administrador = "Administrador",
+  gerente = "Gerente",
+  personal = "Personal",
 }
