@@ -23,3 +23,7 @@ column_name,
 data_type, character_maximum_length, column_default, is_nullable
 FROM information_schema.columns
 WHERE table_name = 'work_order_items';
+
+
+# Migrations
+profile_groups se inserta datos con un trigger, posterior a la creación de un nuevo grupo.

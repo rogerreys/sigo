@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { profileService, roleService } from '../services/supabase';
-import { groupService } from '../services/groupService';
+import { profileService, roleService, groupsService } from '../services/supabase';
 import Button from '../components/common/Button';
 import { InformationCircleIcon } from '../utils/icons';
 import {useAuth} from '../hooks/useAuth';
@@ -42,7 +41,7 @@ const NewUserForm: React.FC<NewUserFormProps> = ({ onSuccess, onCancel }) => {
       }
     };
     const fetchGroups = async () => {
-      const { data, error } = await groupService.getAll();
+      const { data, error } = await groupsService.getAll();
       if (error) throw error;
       if (data) {
         setGroups(data);
