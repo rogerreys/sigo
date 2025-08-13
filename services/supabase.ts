@@ -358,7 +358,7 @@ export const profileService = {
     // Ensure you have a Supabase client initialized with the service_role key.
     const { data, error } = await supabase.auth.admin.deleteUser(userId);
     if (error) {
-      console.error('Error deleting user:', error);
+      console.error("Error deleting user:", error);
       throw error;
     }
     return data;
@@ -387,7 +387,7 @@ export const profileService = {
       if (!user) throw new Error("Usuario no autenticado");
 
       // Primero obtenemos el grupo del usuario actual
-      const { data , error } = await supabase
+      const { data, error } = await supabase
         .from("profiles")
         .select("group_id")
         .eq("id", user.id)
@@ -445,12 +445,9 @@ export const profileService = {
     >
   ) => {
     try {
-      
-      const { data, error } = await supabase
-        .from("profiles")
-        .insert({
-          ...profileData
-        });
+      const { data, error } = await supabase.from("profiles").insert({
+        ...profileData,
+      });
 
       if (error) throw error;
       return { data, error: null };
@@ -557,7 +554,7 @@ export const workOrderService = {
       if (!user) throw new Error("Usuario no autenticado");
       const { data: groupMembers } = await profileService.getGroupMembers();
       const groupId = groupMembers?.group_id;
-      
+
       if (!groupId) throw new Error("El usuario no pertenece a ningún grupo");
 
       const { data, error } = await supabase
@@ -629,9 +626,13 @@ export const workOrderService = {
 
       // Create the work order data with all required fields and defaults
       const now = new Date().toISOString();
-      const { work_order_items_id, ...orderDataWithoutItems } = orderData as any;
-      
-      const workOrderData: Omit<Tables["work_orders"]["Insert"], 'work_order_items_id'> & { work_order_items_id?: string } = {
+      const { work_order_items_id, ...orderDataWithoutItems } =
+        orderData as any;
+
+      const workOrderData: Omit<
+        Tables["work_orders"]["Insert"],
+        "work_order_items_id"
+      > & { work_order_items_id?: string } = {
         ...orderDataWithoutItems,
         user_id: user.id,
         group_id: groupId,
@@ -734,10 +735,7 @@ export const workOrderItemService = {
   addItem: async (
     itemData: Omit<
       Tables["work_order_items"]["Insert"],
-      | "user_id"
-      | "group_id"
-      | "created_at"
-      | "updated_at"
+      "user_id" | "group_id" | "created_at" | "updated_at"
     >
   ) => {
     try {
@@ -757,7 +755,7 @@ export const workOrderItemService = {
           {
             ...itemData,
             user_id: user.id,
-            group_id: groupMembers.group_id
+            group_id: groupMembers.group_id,
           },
         ])
         .select()
@@ -847,19 +845,43 @@ export const workOrderItemService = {
       if (!groupId) {
         throw new Error("No se pudo determinar el grupo del usuario");
       }
-      
+
       const { data, error } = await supabase
         .from("work_order_items")
         .select("*")
         .eq("work_order_id", workOrderId)
         .eq("user_id", user.id)
         .eq("group_id", groupId);
-        // .order("created_at", { ascending: true });
+      // .order("created_at", { ascending: true });
 
       if (error) throw error;
       return { data, error: null };
     } catch (error) {
       return handleError(error, "workOrderItemService.getItems");
+    }
+  },
+};
+
+// Servicio para grupos
+export const groupsService = {
+  getAll: async () => {
+    try {
+      const {
+        data: { user },
+        error: error_user,
+      } = await supabase.auth.getUser();
+      if (error_user) throw error_user;
+      if (!user) throw new Error("Usuario no autenticado");
+
+      const { data, error: error_groups } = await supabase
+        .from("groups")
+        .select("*")
+        .eq("created_by", user.id);
+
+      if (error_groups) throw error_groups;
+      return { data, error: error_groups };
+    } catch (error) {
+      return handleError(error, "groups.getAll");
     }
   },
 };

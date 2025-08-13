@@ -1,53 +1,112 @@
-
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { LogoutIcon, ChevronDownIcon } from '../../utils/icons';
+import { LogoutIcon, ChevronDownIcon, UserCircleIcon } from '../../utils/icons';
+import { groupsService } from '../../services/supabase';
+import { Group } from '../../types';
 
 const Header: React.FC = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+
+  useEffect(() => {
+    const fetchGroups = async () => {
+      const { data, error } = await groupsService.getAll();
+      if (data) {
+        setGroups(data);
+        if (user?.group_id) {
+          const currentGroup = data.find(g => g.id === user.group_id);
+          setSelectedGroup(currentGroup || null);
+        }
+      }
+    };
+    fetchGroups();
+  }, [user?.group_id]);
 
   const handleLogout = async () => {
     await signOut();
     navigate('/login');
   };
 
+  const handleGroupChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const groupId = e.target.value;
+    const group = groups.find(g => g.id === groupId) || null;
+    setSelectedGroup(group);
+  };
+
   return (
-    <header className="flex justify-between items-center py-4 px-6 bg-surface border-b-2 border-gray-100">
-      <div className="flex items-center">
-        {/* Can add search bar here if needed */}
-      </div>
-      <div className="relative">
-        <button
-          onClick={() => setDropdownOpen(!dropdownOpen)}
-          className="relative z-10 block h-8 w-8 rounded-full overflow-hidden border-2 border-gray-600 focus:outline-none focus:border-white flex items-center justify-center bg-primary-500 text-white font-bold"
-        >
-          {user?.name?.charAt(0).toUpperCase()}
-        </button>
-        {dropdownOpen && (
-          <div
-            onClick={() => setDropdownOpen(false)}
-            className="fixed inset-0 h-full w-full z-10"
-          ></div>
-        )}
-        {dropdownOpen && (
-          <div className="absolute right-0 mt-2 w-48 bg-white rounded-md overflow-hidden shadow-xl z-20">
-            <div className="px-4 py-3 border-b">
-                <p className="text-sm font-semibold text-gray-800">{user?.name}</p>
-                <p className="text-xs text-gray-500">{user?.email}</p>
-            </div>
-            <a
-              href="#"
-              onClick={handleLogout}
-              className="flex items-center px-4 py-3 text-sm text-gray-600 hover:bg-gray-100"
-            >
-              <LogoutIcon className="h-5 w-5 mr-3" />
-              Cerrar Sesión
-            </a>
+    <header className="bg-white border-b border-gray-100 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16 items-center">
+          <div className="flex items-center">
+            <h1 className="text-xl font-semibold text-gray-900">{selectedGroup?.description}</h1>
           </div>
-        )}
+
+          <div className="flex items-center space-x-4">
+            {/* Group Selector */}
+            <div className="relative group">
+              <select
+                value={selectedGroup?.id || ''}
+                onChange={handleGroupChange}
+                className="block w-48 appearance-none bg-white border border-gray-200 hover:border-gray-300 px-4 py-2 pr-8 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 cursor-pointer"
+              >
+                <option value="" disabled selected>Seleccionar grupo</option>
+                {groups.map((group) => (
+                  <option key={group.id} value={group.id}>
+                    {group.name}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+                <ChevronDownIcon className="h-4 w-4" />
+              </div>
+            </div>
+
+            {/* User Menu */}
+            <div className="relative">
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center space-x-2 focus:outline-none"
+              >
+                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white font-medium shadow-sm">
+                  {user?.name?.charAt(0).toUpperCase() || <UserCircleIcon className="h-6 w-6" />}
+                </div>
+              </button>
+
+              {isDropdownOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setIsDropdownOpen(false)}
+                  />
+                  <div className="origin-top-right absolute right-0 mt-2 w-56 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20">
+                    <div className="py-1" role="menu">
+                      <div className="px-4 py-3 border-b border-gray-100">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {user?.name || 'Usuario'}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {user?.email || ''}
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 flex items-center transition-colors"
+                        role="menuitem"
+                      >
+                        <LogoutIcon className="mr-3 h-5 w-5 text-gray-400" />
+                        Cerrar sesión
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </header>
   );
