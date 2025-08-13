@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, FormEvent } from 'react';
-import { profileService } from '../services/supabase';
-import { groupService } from '../services/groupService';
+import { profileService, groupsService } from '../services/supabase';
 import { Database } from '../types/supabase';
 import Button from '../components/common/Button';
 import { PlusIcon } from '../utils/icons';
@@ -9,6 +8,8 @@ import { useNavigate } from 'react-router-dom';
 import Modal from '../components/common/Modal';
 import Input from '../components/common/Input';
 import { toast } from 'react-toastify';
+import { useGroup } from '../components/common/GroupContext';
+import { Group } from '../types/supabase';
 
 declare global {
   namespace JSX {
@@ -18,17 +19,11 @@ declare global {
   }
 }
 
-type Group = {
-  id: string;
-  name: string;
-  description: string | null;
-  created_at: string;
-};
-
 // User type is defined but not used in this component
 
 const Settings: React.FC = () => {
     const navigate = useNavigate();
+    const { selectedGroup } = useGroup();
     type User = Database['public']['Tables']['profiles']['Row'];
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
@@ -40,7 +35,7 @@ const Settings: React.FC = () => {
     const [groups, setGroups] = useState<Group[]>([]);
 
     const fetchGroups = async () => {
-        const { data, error } = await groupService.getAll();
+        const { data, error } = await groupsService.getCreatedBy();
         if (error) {
             console.error('Error fetching groups:', error);
             toast.error('Error al cargar los grupos');
@@ -57,7 +52,7 @@ const Settings: React.FC = () => {
         }
 
         try {
-            const { error } = await groupService.create({
+            const { error } = await groupsService.create({
                 name: newGroup.name,
                 description: newGroup.description || null
             });

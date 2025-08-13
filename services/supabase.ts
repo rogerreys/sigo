@@ -9,8 +9,8 @@ type WorkOrder = Tables["work_orders"]["Row"] & {
     products?: Tables["products"]["Row"];
   })[];
 };
-type GroupInsert = Database['public']['Tables']['groups']['Insert'];
-type GroupUpdate = Database['public']['Tables']['groups']['Update'];
+type GroupInsert = Database["public"]["Tables"]["groups"]["Insert"];
+type GroupUpdate = Database["public"]["Tables"]["groups"]["Update"];
 
 // Configuración de Supabase
 const supabaseUrl =
@@ -887,27 +887,38 @@ export const groupsService = {
     }
   },
   // Obtener grupos creados por el usuario actual
-  getMyGroups: async () => {
+  getCreatedBy: async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuario no autenticado');
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
+      if (!user) throw new Error("Usuario no autenticado");
+
+      // Primero obtenemos los IDs de los grupos a los que pertenece el usuario
+      const { data: userGroups } = await supabase
+        .from("profile_groups")
+        .select("group_id")
+        .eq("profile_id", user.id)
+        .not("group_id", "is", null);
+
+      const groupIds = userGroups?.map((g) => g.group_id) || [];
+
+      // Luego obtenemos los grupos donde es creador o miembro
       const { data, error } = await supabase
-        .from('groups')
-        .select('*')
-        .or(`created_by.eq.${user.id},id.in.(${
-          supabase
-            .from('profiles')
-            .select('group_id')
-            .eq('id', user.id)
-            .not('group_id', 'is', null)
-        })`)
-        .order('name', { ascending: true });
+        .from("groups")
+        .select("*")
+        .or(
+          `created_by.eq.${user.id}${
+            groupIds.length ? `,id.in.(${groupIds.join(",")})` : ""
+          }`
+        )
+        .order("name", { ascending: true });
 
       if (error) throw error;
       return { data, error: null };
     } catch (error) {
-      console.error('Error fetching user groups:', error);
+      console.error("Error fetching user groups:", error);
       return { data: null, error };
     }
   },
@@ -916,27 +927,34 @@ export const groupsService = {
   getById: async (id: string) => {
     try {
       const { data, error } = await supabase
-        .from('groups')
-        .select('*')
-        .eq('id', id)
+        .from("groups")
+        .select("*")
+        .eq("id", id)
         .single();
 
       if (error) throw error;
       return { data, error: null };
     } catch (error) {
-      console.error('Error fetching group by ID:', error);
+      console.error("Error fetching group by ID:", error);
       return { data: null, error };
     }
   },
 
   // Crear un nuevo grupo
-  create: async (groupData: Omit<GroupInsert, 'id' | 'created_at' | 'updated_at' | 'created_by'>) => {
+  create: async (
+    groupData: Omit<
+      GroupInsert,
+      "id" | "created_at" | "updated_at" | "created_by"
+    >
+  ) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuario no autenticado');
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuario no autenticado");
 
       const { data, error } = await supabase
-        .from('groups')
+        .from("groups")
         .insert([
           {
             ...groupData,
@@ -949,7 +967,7 @@ export const groupsService = {
       if (error) throw error;
       return { data, error: null };
     } catch (error) {
-      console.error('Error creating group:', error);
+      console.error("Error creating group:", error);
       return { data: null, error };
     }
   },
@@ -958,19 +976,19 @@ export const groupsService = {
   update: async (id: string, groupData: Partial<GroupUpdate>) => {
     try {
       const { data, error } = await supabase
-        .from('groups')
+        .from("groups")
         .update({
           ...groupData,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', id)
+        .eq("id", id)
         .select()
         .single();
 
       if (error) throw error;
       return { data, error: null };
     } catch (error) {
-      console.error('Error updating group:', error);
+      console.error("Error updating group:", error);
       return { data: null, error };
     }
   },
@@ -978,15 +996,12 @@ export const groupsService = {
   // Eliminar un grupo
   delete: async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('groups')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.from("groups").delete().eq("id", id);
 
       if (error) throw error;
       return { error: null };
     } catch (error) {
-      console.error('Error deleting group:', error);
+      console.error("Error deleting group:", error);
       return { error };
     }
   },
@@ -995,15 +1010,15 @@ export const groupsService = {
   getGroupMembers: async (groupId: string) => {
     try {
       const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('group_id', groupId)
-        .order('full_name', { ascending: true });
+        .from("profiles")
+        .select("*")
+        .eq("group_id", groupId)
+        .order("full_name", { ascending: true });
 
       if (error) throw error;
       return { data, error: null };
     } catch (error) {
-      console.error('Error fetching group members:', error);
+      console.error("Error fetching group members:", error);
       return { data: null, error };
     }
   },
@@ -1012,16 +1027,16 @@ export const groupsService = {
   addUserToGroup: async (userId: string, groupId: string) => {
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from("profiles")
         .update({ group_id: groupId })
-        .eq('id', userId)
+        .eq("id", userId)
         .select()
         .single();
 
       if (error) throw error;
       return { data, error: null };
     } catch (error) {
-      console.error('Error adding user to group:', error);
+      console.error("Error adding user to group:", error);
       return { data: null, error };
     }
   },
@@ -1030,16 +1045,16 @@ export const groupsService = {
   removeUserFromGroup: async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from("profiles")
         .update({ group_id: null })
-        .eq('id', userId)
+        .eq("id", userId)
         .select()
         .single();
 
       if (error) throw error;
       return { data, error: null };
     } catch (error) {
-      console.error('Error removing user from group:', error);
+      console.error("Error removing user from group:", error);
       return { data: null, error };
     }
   },
@@ -1047,31 +1062,33 @@ export const groupsService = {
   // Verificar si el usuario actual es administrador del grupo
   isGroupAdmin: async (groupId: string) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return { isAdmin: false, error: 'Usuario no autenticado' };
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return { isAdmin: false, error: "Usuario no autenticado" };
 
       // Verificar si el usuario es administrador del sistema
       const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
         .single();
 
-      if (profile?.role === 'admin') {
+      if (profile?.role === "admin") {
         return { isAdmin: true, error: null };
       }
 
       // Verificar si el usuario es el creador del grupo
       const { data: group, error } = await supabase
-        .from('groups')
-        .select('created_by')
-        .eq('id', groupId)
+        .from("groups")
+        .select("created_by")
+        .eq("id", groupId)
         .single();
 
       if (error) throw error;
       return { isAdmin: group?.created_by === user.id, error: null };
     } catch (error) {
-      console.error('Error checking group admin status:', error);
+      console.error("Error checking group admin status:", error);
       return { isAdmin: false, error };
     }
   },
@@ -1081,29 +1098,29 @@ export const profileGroupService = {
   getAll: async () => {
     try {
       const { data, error } = await supabase
-        .from('profile_groups')
-        .select('*')
-        .order('created_at', { ascending: true });
+        .from("profile_groups")
+        .select("*")
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
       return { data, error: null };
     } catch (error) {
-      console.error('Error fetching profile groups:', error);
+      console.error("Error fetching profile groups:", error);
       return { data: null, error };
     }
   },
   getByGroup: async (groupId: string) => {
     try {
       const { data, error } = await supabase
-        .from('profile_groups')
-        .select('*')
-        .eq('group_id', groupId)
-        .order('created_at', { ascending: true });
+        .from("profile_groups")
+        .select("*")
+        .eq("group_id", groupId)
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
       return { data, error: null };
     } catch (error) {
-      console.error('Error fetching profile groups by group:', error);
+      console.error("Error fetching profile groups by group:", error);
       return { data: null, error };
     }
   },
