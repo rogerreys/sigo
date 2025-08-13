@@ -13,6 +13,7 @@ import Settings from './pages/Settings';
 import NewUserForm from './pages/NewUserForm';
 import NewClient from './pages/NewClient';
 import NewProduct from './pages/NewProduct';
+import { GroupProvider } from './components/common/GroupContext';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -54,7 +55,9 @@ const App: React.FC = () => {
   return (
     <AuthProvider>
       <HashRouter>
-        <AppRoutes />
+        <GroupProvider>
+          <AppRoutes />
+        </GroupProvider>
       </HashRouter>
     </AuthProvider>
   );

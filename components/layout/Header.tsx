@@ -3,28 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { LogoutIcon, ChevronDownIcon, UserCircleIcon } from '../../utils/icons';
 import { groupsService } from '../../services/supabase';
-import { Group } from '../../types';
+import { useGroup } from '../../components/common/GroupContext';
 
 const Header: React.FC = () => {
   const { user, signOut } = useAuth();
-  const navigate = useNavigate();
-  const [groups, setGroups] = useState<Group[]>([]);
+  const { groups, selectedGroup, setSelectedGroup } = useGroup();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
-
-  useEffect(() => {
-    const fetchGroups = async () => {
-      const { data, error } = await groupsService.getAll();
-      if (data) {
-        setGroups(data);
-        if (user?.group_id) {
-          const currentGroup = data.find(g => g.id === user.group_id);
-          setSelectedGroup(currentGroup || null);
-        }
-      }
-    };
-    fetchGroups();
-  }, [user?.group_id]);
+  const navigate = useNavigate();
 
   const handleLogout = async () => {
     await signOut();
@@ -33,6 +18,7 @@ const Header: React.FC = () => {
 
   const handleGroupChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const groupId = e.target.value;
+    if (!groupId) return;
     const group = groups.find(g => g.id === groupId) || null;
     setSelectedGroup(group);
   };
@@ -42,7 +28,7 @@ const Header: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <div className="flex items-center">
-            <h1 className="text-xl font-semibold text-gray-900">{selectedGroup?.description}</h1>
+            <h1 className="text-xl font-semibold text-gray-900">{selectedGroup?.description || ''}</h1>
           </div>
 
           <div className="flex items-center space-x-4">
@@ -53,7 +39,7 @@ const Header: React.FC = () => {
                 onChange={handleGroupChange}
                 className="block w-48 appearance-none bg-white border border-gray-200 hover:border-gray-300 px-4 py-2 pr-8 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 cursor-pointer"
               >
-                <option value="" disabled selected>Seleccionar grupo</option>
+                <option value="" disabled>Seleccionar grupo</option>
                 {groups.map((group) => (
                   <option key={group.id} value={group.id}>
                     {group.name}
