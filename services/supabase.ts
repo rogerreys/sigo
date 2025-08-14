@@ -92,7 +92,6 @@ export const clientService = {
       const { data, error } = await supabase
         .from("clients")
         .select("*")
-        //.eq("user_id", user.id)
         .eq("group_id", groupId)
         .order("last_name", { ascending: true });
 
@@ -313,7 +312,6 @@ export const productService = {
         .from("products")
         .update(productData)
         .eq("id", id)
-        //.eq("user_id", user.id)
         .eq("group_id", groupId)
         .select()
         .single();
