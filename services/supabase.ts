@@ -82,7 +82,7 @@ export const authService = {
 // Servicio para clientes
 export const clientService = {
   // Obtener todos los clientes del usuario actual
-  getAll: async () => {
+  getAll: async (groupId: string) => {
     try {
       const {
         data: { user },
@@ -93,6 +93,7 @@ export const clientService = {
         .from("clients")
         .select("*")
         .eq("user_id", user.id)
+        .eq("group_id", groupId)
         .order("last_name", { ascending: true });
 
       if (error) throw error;
@@ -199,18 +200,22 @@ export const clientService = {
 
 // Servicio para usuarios
 export const userService = {
-  // Obtener todos los usuarios del usuario actual
-  getAll: async () => {
+  // Obtener todos los usuarios del usuario actual por grupo
+  getAll: async (groupId: string) => {
     try {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuario no autenticado");
-
+      // Identicamos los perfiles por el grupo
+      const { data: profgroup, error: profilesError } = await profileGroupService.getByGroup(groupId);
+      if(profilesError) return handleError(profilesError, "userService.getAll");
+      if (!profgroup) return { data: [], error: null };
+      // Obtenemos los perfiles
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
-        .eq("user_id", user.id)
+        .in("id", profgroup.map((p: any) => p.profile_id))
         .order("full_name", { ascending: true });
 
       if (error) throw error;
@@ -549,16 +554,12 @@ export const roleService = {
 // Servicio para órdenes de trabajo
 export const workOrderService = {
   // Obtener todas las órdenes de trabajo del usuario actual
-  getAll: async () => {
+  getAll: async (groupId: string) => {
     try {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuario no autenticado");
-      const { data: groupMembers } = await profileService.getGroupMembers();
-      const groupId = groupMembers?.group_id;
-
-      if (!groupId) throw new Error("El usuario no pertenece a ningún grupo");
 
       const { data, error } = await supabase
         .from("work_orders")

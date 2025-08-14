@@ -1,11 +1,12 @@
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { Client, Profiles, WorkOrders, WorkOrderStatus, WorkOrderStatusFront } from '../types';
 import Button from '../components/common/Button';
 import { PlusIcon, SearchIcon, CheckCircleIcon, ClockIcon, PauseCircleIcon, DocumentTextIcon, XCircleIcon, FilterIcon, ChevronDownIcon } from '../utils/icons';
 import { useNavigate } from 'react-router-dom';
 import { workOrderService, clientService, userService } from '../services/supabase';
 import WorkOrderDetailModal from '../components/common/WorkOrderDetailModal';
+import { useGroup } from '../components/common/GroupContext';
 
 const WorkOrders: React.FC = () => {
     const [workOrders, setWorkOrders] = useState<WorkOrders[]>([]);
@@ -15,7 +16,7 @@ const WorkOrders: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedStatus, setSelectedStatus] = useState<WorkOrderStatus | 'All'>('All');
     const [isFilterOpen, setFilterOpen] = useState(false);
-
+    const { selectedGroup } = useGroup();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrders | null>(null);
@@ -23,33 +24,35 @@ const WorkOrders: React.FC = () => {
 
     const navigate = useNavigate();
 
-    useEffect(() => {
-        const fetchWorkOrders = async () => {
-            try {
-                setLoading(true);
-
-                const [clientsRes, workOrdersRes, profilesRes] = await Promise.all([
-                    clientService.getAll(),
-                    workOrderService.getAll(),
-                    userService.getAll()
-                ]);
-
-                if (clientsRes.data) setClients(clientsRes.data as Client[]);
-                if (workOrdersRes.data) setWorkOrders(workOrdersRes.data as WorkOrders[]);
-                if (profilesRes.data) {
-                    const mechanics = (profilesRes.data as Profiles[]).filter((u: Profiles) => u.role === 'staff');
-                    setUsers(mechanics as Profiles[]);
-                }
-
-
-            } catch (error) {
-                console.error("Error fetching data for work orders:", error);
-            } finally {
-                setLoading(false);
+    const fetchWorkOrders = useCallback(async () => {
+        try {
+            setLoading(true);
+            if (!selectedGroup) return;
+            
+            const [clientsRes, workOrdersRes, profilesRes] = await Promise.all([
+                clientService.getAll(selectedGroup.id),
+                workOrderService.getAll(selectedGroup.id),
+                userService.getAll(selectedGroup.id)
+            ]);
+            console.log("clientsRes",clientsRes);
+            console.log("workOrdersRes",workOrdersRes);
+            console.log("profilesRes",profilesRes);
+            if (clientsRes.data) setClients(clientsRes.data as Client[]);
+            if (workOrdersRes.data) setWorkOrders(workOrdersRes.data as WorkOrders[]);
+            if (profilesRes.data) {
+                const mechanics = (profilesRes.data as Profiles[]).filter((u: Profiles) => u.role === 'staff');
+                setUsers(mechanics as Profiles[]);
             }
-        };
+        } catch (error) {
+            console.error("Error fetching data for work orders:", error);
+        } finally {
+            setLoading(false);
+        }
+    }, [selectedGroup]);
+
+    useEffect(() => {
         fetchWorkOrders();
-    }, []);
+    }, [fetchWorkOrders]);
 
     const statusCounts = useMemo(() => {
         const counts: { [key in WorkOrderStatus]: number } = {
