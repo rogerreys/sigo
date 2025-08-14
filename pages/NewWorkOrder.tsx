@@ -6,6 +6,8 @@ import Button from '../components/common/Button';
 import { XCircleIcon } from '../utils/icons';
 import { clientService, productService, userService, workOrderItemService, workOrderService } from '../services/supabase';
 import { WorkOrderStatus, WorkOrders, WorkOrderItems } from '../types';
+import { useGroup } from '../components/common/GroupContext';
+import GroupGuard from '../components/common/GroupGuard';
 
 // A small helper component for form rows
 const FormRow: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
@@ -46,34 +48,35 @@ const NewWorkOrder: React.FC = () => {
     const [selectedProductId, setSelectedProductId] = useState('');
     const [selectedProductQuantity, setSelectedProductQuantity] = useState(1);
 
+    const { selectedGroup } = useGroup();
     useEffect(() => {
-        const fetchData = async () => {
-            setLoadingData(true);
-            try {
-
-                const [clientsRes, productsRes, usersRes] = await Promise.all([
-                    clientService.getAll(),
-                    productService.getAll(),
-                    userService.getAll(),
-                ]);
-
-                if (clientsRes.data) setClients(clientsRes.data as Client[]);
-                if (productsRes.data) setProducts(productsRes.data as Product[]);
-                if (usersRes.data) {
-                    const mechanics = (usersRes.data as Profiles[]).filter((u: Profiles) => u.role === 'staff');
-                    setUsers(mechanics as Profiles[]);
-                    if (mechanics.length > 0) setAssignedToId(mechanics[0].id.toString());
-                }
-
-            } catch (error) {
-                console.error("Error fetching data for new work order:", error);
-            } finally {
-                setLoadingData(false);
-            }
-        };
         fetchData();
-    }, []);
+    }, [selectedGroup]);
 
+    const fetchData = async () => {
+        setLoadingData(true);
+        try {
+            if (!selectedGroup) return;
+            const [clientsRes, productsRes, usersRes] = await Promise.all([
+                clientService.getAll(selectedGroup.id),
+                productService.getAll(selectedGroup.id),
+                userService.getAll(selectedGroup.id),
+            ]);
+
+            if (clientsRes.data) setClients(clientsRes.data as Client[]);
+            if (productsRes.data) setProducts(productsRes.data as Product[]);
+            if (usersRes.data) {
+                const mechanics = (usersRes.data as Profiles[]).filter((u: Profiles) => u.role === 'staff');
+                setUsers(mechanics as Profiles[]);
+                if (mechanics.length > 0) setAssignedToId(mechanics[0].id.toString());
+            }
+
+        } catch (error) {
+            console.error("Error fetching data for new work order:", error);
+        } finally {
+            setLoadingData(false);
+        }
+    };
     const handleAddService = (e: React.FormEvent) => {
         e.preventDefault();
         if (newServiceDesc && newServicePrice) {
@@ -265,6 +268,7 @@ const NewWorkOrder: React.FC = () => {
 
     return (
         <div>
+            <GroupGuard>
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold text-gray-800">Nueva Orden de Trabajo / Presupuesto</h1>
                 <Button onClick={() => navigate('/work-orders')} variant="secondary">
@@ -422,6 +426,7 @@ const NewWorkOrder: React.FC = () => {
                     </div>
                 </div>
             </div>
+            </GroupGuard>
         </div>
     );
 };

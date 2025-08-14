@@ -229,7 +229,7 @@ export const userService = {
 // Servicio para productos
 export const productService = {
   // Obtener todos los productos del usuario actual
-  getAll: async () => {
+  getAll: async (groupId: string) => {
     try {
       const {
         data: { user },
@@ -240,6 +240,7 @@ export const productService = {
         .from("products")
         .select("*")
         .eq("user_id", user.id)
+        .eq("group_id", groupId)
         .order("name", { ascending: true });
 
       if (error) throw error;

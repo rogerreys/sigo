@@ -34,9 +34,7 @@ const WorkOrders: React.FC = () => {
                 workOrderService.getAll(selectedGroup.id),
                 userService.getAll(selectedGroup.id)
             ]);
-            console.log("clientsRes",clientsRes);
-            console.log("workOrdersRes",workOrdersRes);
-            console.log("profilesRes",profilesRes);
+            
             if (clientsRes.data) setClients(clientsRes.data as Client[]);
             if (workOrdersRes.data) setWorkOrders(workOrdersRes.data as WorkOrders[]);
             if (profilesRes.data) {
