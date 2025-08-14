@@ -1,10 +1,12 @@
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { Database } from '../types/supabase';
 import Button from '../components/common/Button';
 import { PlusIcon, SearchIcon, EditIcon, DeleteIcon } from '../utils/icons';
 import { productService } from '../services/supabase';
 import { useNavigate } from 'react-router-dom';
+import { useGroup } from '../components/common/GroupContext';
+import GroupGuard from '../components/common/GroupGuard';
 
 const Inventory: React.FC = () => {
     type Product = Database['public']['Tables']['products']['Row'];
@@ -12,22 +14,23 @@ const Inventory: React.FC = () => {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const { selectedGroup } = useGroup();
 
-    useEffect(() => {
-        fetchProducts();
-    }, []);
-    
-    const fetchProducts = async () => {
+    const fetchProducts = useCallback(async () => {
         setLoading(true);
-        const { data, error } = await productService.getAll();
+        if (!selectedGroup) return;
+        const { data, error } = await productService.getAll(selectedGroup.id);
         if (error) {
             console.error('Error fetching products:', error);
         } else if (data) {
-            console.log("response: ", data);
             setProducts(data as Product[]);
         }
         setLoading(false);
-    };
+    }, [selectedGroup]);
+
+    useEffect(() => {
+        fetchProducts();
+    }, [fetchProducts]);
 
     const filteredProducts = useMemo(() => {
         return products.filter((product: Product) =>
@@ -44,7 +47,8 @@ const Inventory: React.FC = () => {
 
     const handleDelete = async (id: string) => {
         setLoading(true);
-        const { error } = await productService.delete(id);
+        if (!selectedGroup) return;
+        const { error } = await productService.delete(id, selectedGroup.id);
         if (error) {
             console.error('Error deleting product:', error);
         } else {
@@ -54,6 +58,7 @@ const Inventory: React.FC = () => {
     };
     return (
         <div>
+            <GroupGuard>
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold text-gray-800">Control de Inventario</h1>
                 <Button icon={<PlusIcon className="h-5 w-5" />} onClick={() => navigate('/inventory/new')}>
@@ -116,6 +121,7 @@ const Inventory: React.FC = () => {
                     </div>
                 )}
             </div>
+            </GroupGuard>
         </div>
     );
 };

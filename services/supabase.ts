@@ -239,7 +239,6 @@ export const productService = {
       const { data, error } = await supabase
         .from("products")
         .select("*")
-        .eq("user_id", user.id)
         .eq("group_id", groupId)
         .order("name", { ascending: true });
 
@@ -271,7 +270,7 @@ export const productService = {
     productData: Omit<
       Tables["products"]["Insert"],
       "id" | "user_id" | "created_at" | "updated_at"
-    >
+    >, groupId: string
   ) => {
     try {
       const {
@@ -281,7 +280,7 @@ export const productService = {
 
       const { data, error } = await supabase
         .from("products")
-        .insert([{ ...productData, user_id: user.id }])
+        .insert([{ ...productData, user_id: user.id, group_id: groupId }])
         .select()
         .single();
 
@@ -295,7 +294,8 @@ export const productService = {
   // Actualizar un producto
   update: async (
     id: string,
-    productData: Partial<Tables["products"]["Update"]>
+    productData: Partial<Tables["products"]["Update"]>, 
+    groupId: string
   ) => {
     try {
       const {
@@ -307,7 +307,8 @@ export const productService = {
         .from("products")
         .update(productData)
         .eq("id", id)
-        .eq("user_id", user.id)
+        //.eq("user_id", user.id)
+        .eq("group_id", groupId)
         .select()
         .single();
 
@@ -319,7 +320,7 @@ export const productService = {
   },
 
   // Eliminar un producto
-  delete: async (id: string) => {
+  delete: async (id: string, groupId: string) => {
     try {
       const {
         data: { user },
@@ -330,7 +331,7 @@ export const productService = {
         .from("products")
         .delete()
         .eq("id", id)
-        .eq("user_id", user.id);
+        .eq("group_id", groupId);
 
       if (error) throw error;
       return { data: { success: true }, error: null };
