@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../types/supabase";
+import { Group } from "@/types";
 
 // Tipos para TypeScript
 type Tables = Database["public"]["Tables"];
@@ -29,7 +30,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
 
 // Helper para manejar errores comunes
 const handleError = (error: any, context: string) => {
-  console.error(`Error en ${context}:`, error);
+  console.error(`Error en ${context}: ${error}`);
   return { data: null, error };
 };
 
@@ -872,7 +873,7 @@ export const groupsService = {
         data: { user },
         error: error_user,
       } = await supabase.auth.getUser();
-      if (error_user) throw error_user;
+      if (error_user) handleError(error_user, "groups.getAll");
       if (!user) throw new Error("Usuario no autenticado");
 
       const { data, error: error_groups } = await supabase
@@ -880,7 +881,7 @@ export const groupsService = {
         .select("*")
         .eq("created_by", user.id);
 
-      if (error_groups) throw error_groups;
+      if (error_groups) handleError(error_groups, "groups.getAll");
       return { data, error: error_groups };
     } catch (error) {
       return handleError(error, "groups.getAll");
@@ -924,18 +925,27 @@ export const groupsService = {
   },
 
   // Obtener un grupo por ID
-  getById: async (id: string) => {
+  getById: async (groupItems: Array<{ group_id: string }>) => {
     try {
+      // Extract just the group IDs from the array of objects
+      const groupIds = groupItems.map(item => item.group_id);
+      
+      // If no group IDs, return empty array
+      if (groupIds.length === 0) {
+        return { data: [], error: null };
+      }
+  
+      // Query the groups table with the extracted IDs
       const { data, error } = await supabase
         .from("groups")
         .select("*")
-        .eq("id", id)
-        .single();
-
+        .in("id", groupIds)
+        .order("name", { ascending: true });
+  
       if (error) throw error;
       return { data, error: null };
     } catch (error) {
-      console.error("Error fetching group by ID:", error);
+      console.error("Error in groups.getByGroupItems:", error);
       return { data: null, error };
     }
   },
@@ -1097,16 +1107,35 @@ export const groupsService = {
 export const profileGroupService = {
   getAll: async () => {
     try {
-      const { data, error } = await supabase
-        .from("profile_groups")
-        .select("*")
-        .order("created_at", { ascending: true });
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-      if (error) throw error;
-      return { data, error: null };
+      if (userError) {
+        console.error("Error getting user:", userError);
+        throw new Error("Error de autenticación");
+      }
+
+      if (!user) {
+        console.log("No user session found");
+        return { data: [], error: null }; // Return empty array instead of error
+      }
+
+      const { data, error } = await supabase
+        .from("groups")
+        .select("*")
+        .eq("created_by", user.id);
+
+      if (error) {
+        console.error("Error fetching groups:", error);
+        throw error;
+      }
+
+      return { data: data || [], error: null };
     } catch (error) {
-      console.error("Error fetching profile groups:", error);
-      return { data: null, error };
+      console.error("Error in groups.getAll:", error);
+      return { data: [], error };
     }
   },
   getByGroup: async (groupId: string) => {

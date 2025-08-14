@@ -8,6 +8,7 @@ interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password?: string) => Promise<any>;
   signOut: () => Promise<any>;
+  profileGroup: (userId: string) => Promise<any>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,7 +26,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
       setLoading(false);
     };
-    
+
     checkSession();
   }, []);
 
@@ -57,6 +58,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return { error };
   };
 
+  const profileGroup = async (userId: string) => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("profile_groups")
+        .select("group_id")
+        .eq("profile_id", userId)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+      setLoading(false);
+      return { data, error: null };
+    } catch (error) {
+      console.error("Error fetching profile groups by group:", error);
+      return { data: null, error };
+    }
+  };
+
   const deleteUserById = async (userId: string) => {
     setLoading(true);
     const { error } = await supabase.auth.admin.deleteUser(userId);
@@ -72,6 +91,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     signOut,
     singUp,
     deleteUserById,
+    profileGroup
   };
 
   return (

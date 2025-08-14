@@ -23,7 +23,7 @@ declare global {
 
 const Settings: React.FC = () => {
     const navigate = useNavigate();
-    const { selectedGroup } = useGroup();
+    const { fetchGroups } = useGroup();
     type User = Database['public']['Tables']['profiles']['Row'];
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
@@ -34,7 +34,7 @@ const Settings: React.FC = () => {
     });
     const [groups, setGroups] = useState<Group[]>([]);
 
-    const fetchGroups = async () => {
+    const fetchGroupsCreated = async () => {
         const { data, error } = await groupsService.getCreatedBy();
         if (error) {
             console.error('Error fetching groups:', error);
@@ -65,6 +65,7 @@ const Settings: React.FC = () => {
             alert('Grupo creado exitosamente');
             setShowGroupModal(false);
             setNewGroup({ name: '', description: '' });
+            fetchGroupsCreated();
             fetchGroups();
         } catch (error) {
             console.error('Error creating group:', error);
@@ -86,7 +87,7 @@ const Settings: React.FC = () => {
 
     useEffect(() => {
         fetchUsers();
-        fetchGroups();
+        fetchGroupsCreated();
     }, []);
 
     return (
