@@ -208,14 +208,12 @@ export const userService = {
   // Obtener todos los usuarios del usuario actual por grupo
   getAll: async (groupId: string) => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuario no autenticado");
+      console.log("groupId: ", groupId);
       // Identicamos los perfiles por el grupo
       const { data: profgroup, error: profilesError } = await profileGroupService.getByGroup(groupId);
       if(profilesError) return handleError(profilesError, "userService.getAll");
       if (!profgroup) return { data: [], error: null };
+      
       // Obtenemos los perfiles
       const { data, error } = await supabase
         .from("profiles")

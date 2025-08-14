@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect, FormEvent } from 'react';
-import { profileService, groupsService } from '../services/supabase';
+import React, { useState, useEffect, FormEvent, useCallback } from 'react';
+import { userService, groupsService } from '../services/supabase';
 import { Database } from '../types/supabase';
 import Button from '../components/common/Button';
 import { PlusIcon } from '../utils/icons';
@@ -23,7 +23,7 @@ declare global {
 
 const Settings: React.FC = () => {
     const navigate = useNavigate();
-    const { fetchGroups } = useGroup();
+    const { fetchGroups, selectedGroup } = useGroup();
     type User = Database['public']['Tables']['profiles']['Row'];
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
@@ -104,9 +104,10 @@ const Settings: React.FC = () => {
         }
     };
 
-    const fetchUsers = async () => {
+    const fetchUsers = useCallback(async () => {
         setLoading(true);
-        const { data, error } = await profileService.getAll();
+        if (!selectedGroup) return;
+        const { data, error } = await userService.getAll(selectedGroup.id);
         if (error) {
             console.error("Error fetching users:", error);
             toast.error('Error al cargar los usuarios');
@@ -114,12 +115,12 @@ const Settings: React.FC = () => {
             setUsers(data as User[]);
         }
         setLoading(false);
-    };
+    }, [selectedGroup]);
 
     useEffect(() => {
         fetchUsers();
         fetchGroupsCreated();
-    }, []);
+    }, [fetchUsers]);
 
     return (
         <div className="container mx-auto p-4">
@@ -215,7 +216,7 @@ const Settings: React.FC = () => {
 
             <div className="bg-surface rounded-xl shadow-lg p-6">
                 <div className="flex justify-between items-center mb-4 border-b pb-4">
-                    <h2 className="text-xl font-semibold text-gray-700">Gestión de Usuarios y Roles</h2>
+                    <h2 className="text-xl font-semibold text-gray-700">Gestión de Personal y Roles</h2>
                 </div>
 
                 {loading ? <p>Cargando usuarios...</p> : (
