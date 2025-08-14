@@ -1,30 +1,35 @@
 
-import React, { useEffect, useState, useMemo } from 'react';
-import { supabase } from '../services/supabase';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { Client } from '../types';
 import Button from '../components/common/Button';
 import { PlusIcon, SearchIcon, EditIcon, DeleteIcon } from '../utils/icons';
 import { useNavigate } from 'react-router-dom';
+import { useGroup } from '../components/common/GroupContext';
+import { clientService } from '../services/supabase';
+import GroupGuard from '../components/common/GroupGuard';
 
 const Clients: React.FC = () => {
     const navigate = useNavigate();
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const { selectedGroup } = useGroup();
+
+    const fetchClients = useCallback(async () => {
+        setLoading(true);
+        if (!selectedGroup) return;
+        const { data, error } = await clientService.getAll(selectedGroup.id);
+        if (error) {
+            console.error('Error fetching clients:', error);
+        } else if (data) {
+            setClients(data as Client[]);
+        }
+        setLoading(false);
+    }, [selectedGroup]);
 
     useEffect(() => {
-        const fetchClients = async () => {
-            setLoading(true);
-            const { data, error } = await supabase.from('clients').select('*');
-            if (error) {
-                console.error('Error fetching clients:', error);
-            } else if (data) {
-                setClients(data as Client[]);
-            }
-            setLoading(false);
-        };
         fetchClients();
-    }, []);
+    }, [fetchClients]);
 
     const filteredClients = useMemo(() => {
         return clients.filter(client =>
@@ -33,8 +38,19 @@ const Clients: React.FC = () => {
         );
     }, [clients, searchTerm]);
 
+    const handleDelete = async (id: string) => {
+        try {
+            if (!selectedGroup) return;
+            await clientService.delete(id, selectedGroup.id);
+            fetchClients();
+        } catch (error) {
+            console.error('Error deleting client:', error);
+        }
+    };
+
     return (
         <div>
+            <GroupGuard>
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold text-gray-800">Gestión de Clientes</h1>
                 <Button onClick={() => navigate('/clients/new')} icon={<PlusIcon className="h-5 w-5" />}>
@@ -83,7 +99,7 @@ const Clients: React.FC = () => {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(client.created_at).toLocaleDateString()}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <button className="text-primary-600 hover:text-primary-900 mr-4" onClick={() => navigate(`/clients/new/${client.id}`)}><EditIcon className="h-5 w-5" /></button>
-                                            <button className="text-red-600 hover:text-red-900"><DeleteIcon className="h-5 w-5" /></button>
+                                            <button className="text-red-600 hover:text-red-900" onClick={() => handleDelete(client.id)}><DeleteIcon className="h-5 w-5" /></button>
                                         </td>
                                     </tr>
                                 ))}
@@ -92,6 +108,7 @@ const Clients: React.FC = () => {
                     </div>
                 )}
             </div>
+            </GroupGuard>
         </div>
     );
 };

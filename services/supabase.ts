@@ -92,7 +92,7 @@ export const clientService = {
       const { data, error } = await supabase
         .from("clients")
         .select("*")
-        .eq("user_id", user.id)
+        //.eq("user_id", user.id)
         .eq("group_id", groupId)
         .order("last_name", { ascending: true });
 
@@ -124,7 +124,7 @@ export const clientService = {
     clientData: Omit<
       Tables["clients"]["Insert"],
       "id" | "user_id" | "created_at" | "updated_at"
-    >
+    >, groupId: string
   ) => {
     try {
       const {
@@ -134,7 +134,7 @@ export const clientService = {
 
       const { data, error } = await supabase
         .from("clients")
-        .insert([{ ...clientData, user_id: user.id }])
+        .insert([{ ...clientData, user_id: user.id, group_id: groupId }])
         .select()
         .single();
 
@@ -148,13 +148,15 @@ export const clientService = {
   // Actualizar un cliente
   update: async (
     id: string,
-    clientData: Partial<Tables["clients"]["Update"]>
+    clientData: Partial<Tables["clients"]["Update"]>, 
+    groupId: string
   ) => {
     try {
       const { data, error } = await supabase
         .from("clients")
         .update(clientData)
         .eq("id", id)
+        .eq("group_id", groupId)
         .select()
         .single();
 
@@ -166,9 +168,13 @@ export const clientService = {
   },
 
   // Eliminar un cliente
-  delete: async (id: string) => {
+  delete: async (id: string, groupId: string) => {
     try {
-      const { error } = await supabase.from("clients").delete().eq("id", id);
+      const { error } = await supabase
+      .from("clients")
+      .delete()
+      .eq("id", id)
+      .eq("group_id", groupId);
 
       if (error) throw error;
       return { data: { success: true }, error: null };
