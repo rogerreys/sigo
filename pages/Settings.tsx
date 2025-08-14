@@ -46,30 +46,61 @@ const Settings: React.FC = () => {
 
     const handleCreateGroup = async (e: FormEvent) => {
         e.preventDefault();
+        
         if (!newGroup.name.trim()) {
-            toast.error('El nombre del grupo es requerido');
+            toast.error('❌ El nombre del grupo es requerido', {
+                position: 'top-right',
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+            });
             return;
         }
 
+        const toastId = toast.loading('Creando grupo...', {
+            position: 'top-right',
+            autoClose: false,
+            closeOnClick: false,
+            draggable: false,
+        });
+
         try {
             const { error } = await groupsService.create({
-                name: newGroup.name,
-                description: newGroup.description || null
+                name: newGroup.name.trim(),
+                description: newGroup.description?.trim() || null
             });
 
             if (error) {
-                alert(error.message || 'Error al crear el grupo');
-                return;
+                throw new Error(error.message || 'Error al crear el grupo');
             }
             
-            alert('Grupo creado exitosamente');
+            toast.update(toastId, {
+                render: '✅ Grupo creado exitosamente',
+                type: 'success',
+                isLoading: false,
+                autoClose: 3000,
+                closeOnClick: true,
+                draggable: true,
+            });
+            
             setShowGroupModal(false);
             setNewGroup({ name: '', description: '' });
-            fetchGroupsCreated();
-            fetchGroups();
-        } catch (error) {
+            await Promise.all([fetchGroupsCreated(), fetchGroups()]);
+            
+        } catch (error: any) {
             console.error('Error creating group:', error);
-            alert('Error al crear el grupo');
+            
+            toast.update(toastId, {
+                render: `❌ ${error.message || 'Error al crear el grupo'}`,
+                type: 'error',
+                isLoading: false,
+                autoClose: 5000,
+                closeOnClick: true,
+                draggable: true,
+            });
         }
     };
 
