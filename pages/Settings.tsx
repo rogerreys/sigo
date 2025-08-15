@@ -3,7 +3,7 @@ import React, { useState, useEffect, FormEvent, useCallback } from 'react';
 import { userService, groupsService, profileGroupService } from '../services/supabase';
 import { Database } from '../types/supabase';
 import Button from '../components/common/Button';
-import { PlusIcon } from '../utils/icons';
+import { PlusIcon, EditIcon, DeleteIcon } from '../utils/icons';
 import { useNavigate } from 'react-router-dom';
 import Modal from '../components/common/Modal';
 import Input from '../components/common/Input';
@@ -131,6 +131,14 @@ const Settings: React.FC = () => {
         fetchGroupsCreated();
     }, [fetchUsers]);
 
+    const handleDelete = async (id: string) => {
+        try {
+            
+        } catch (error) {
+            console.error('Error deleting client:', error);
+        }
+    };
+
     return (
         <div className="container mx-auto p-4">
             <div className="flex justify-between items-center mb-6">
@@ -252,8 +260,10 @@ const Settings: React.FC = () => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <a href="#" className="text-primary-600 hover:text-primary-900">Editar</a>
+                                            <button className="text-primary-600 hover:text-primary-900 mr-4" onClick={() => navigate(`/clients/new/${user.id}`)}><EditIcon className="h-5 w-5" /></button>
+                                            <button className="text-red-600 hover:text-red-900" onClick={() => handleDelete(user.id)}><DeleteIcon className="h-5 w-5" /></button>
                                         </td>
+                                        
                                     </tr>
                                 ))}
                             </tbody>

@@ -12,20 +12,31 @@ interface NewUserFormProps {
   onCancel?: () => void;
 }
 
-const NewUserForm: React.FC<NewUserFormProps> = ({ onSuccess, onCancel }) => {
-  const [formData, setFormData] = useState({
+const NewUserForm: React.FC<NewUserFormProps> = () => {
+  interface FormData {
+    email: string;
+    role: string;
+    group: string;
+    profile_name: string;
+    profile_id: string;
+    full_name?: string;
+  }
+
+  const [formData, setFormData] = useState<FormData>({
     email: '',
     role: '',
     group: '',
     profile_name: '',
     profile_id: '',
+    full_name: ''
   });
   const [roles, setRoles] = useState<{ id: string; name: string }[]>([]);
   const [users, setUsers] = useState<Database['public']['Tables']['profiles']['Row'][]>([]);
   const [group, setGroup] = useState<Database['public']['Tables']['groups']['Row'] | null>(null);
   const [loading, setLoading] = useState(false);
-  const [dataloaded, setDataloaded] = useState(false);
+  // Removed unused state variable
   const [error, setError] = useState('');
+  const [existingRole, setExistingRole] = useState<string | null>(null);
   const navigate = useNavigate();
   const { selectedGroup } = useGroup();
 
@@ -45,8 +56,6 @@ const NewUserForm: React.FC<NewUserFormProps> = ({ onSuccess, onCancel }) => {
       const group_unique: Database['public']['Tables']['groups']['Row'] = groupsRes.data[0];
       setGroup(group_unique);
     };
-
-    setDataloaded(true);
   }, [selectedGroup]);
 
   // Fetch roles on component mount
@@ -54,27 +63,47 @@ const NewUserForm: React.FC<NewUserFormProps> = ({ onSuccess, onCancel }) => {
     fetchGets();
   }, [fetchGets]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    if (name === 'profile_name' && value) {
-      const selectedUser = users.find(user => user.id === value);
-      if (selectedUser) {
 
-        setFormData(prev => ({
-          ...prev,
-          profile_name: value,
-          profile_id: selectedUser.id,
-          email: selectedUser.email || '',
-          full_name: selectedUser.full_name || ''
-        }));
-        return;
+    // Update form data first
+    const updatedFormData = {
+      ...formData,
+      [name]: value
+    };
+
+    // If profile_name is being changed
+    if (name === 'profile_name' && value && selectedGroup) {
+      try {
+        const selectedUser = users.find(user => user.id === value);
+        if (selectedUser) {
+          // Update user details in form data
+          updatedFormData.profile_id = selectedUser.id;
+          updatedFormData.email = selectedUser.email || '';
+          updatedFormData.full_name = selectedUser.full_name || '';
+          updatedFormData.profile_name = value;
+
+          // Check if user already has a role in this group
+          const { data: existingRoles, error } = await profileGroupService.getProfilesGroupsRoleByIds(
+            [selectedUser.id],
+            selectedGroup.id
+          );
+
+          if (error) throw error;
+
+          if (existingRoles && existingRoles.length > 0) {
+            setExistingRole(existingRoles[0].role);
+          } else {
+            setExistingRole(null);
+          }
+        }
+      } catch (error) {
+        console.error('Error al verificar roles existentes:', error);
+        setError('Error al verificar los roles del usuario');
       }
     }
 
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(updatedFormData);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -86,10 +115,10 @@ const NewUserForm: React.FC<NewUserFormProps> = ({ onSuccess, onCancel }) => {
       if (!selectedGroup) throw new Error('No se seleccionó un grupo');
       if (!formData.role) throw new Error('Por favor selecciona un rol');
       if (!formData.profile_id) throw new Error('Por favor selecciona un usuario');
-      
-      const { data, error } = await profileGroupService.create(
-        formData.profile_id, 
-        selectedGroup.id, 
+
+      const { error } = await profileGroupService.create(
+        formData.profile_id,
+        selectedGroup.id,
         formData.role
       );
       if (error) throw error;
@@ -104,12 +133,11 @@ const NewUserForm: React.FC<NewUserFormProps> = ({ onSuccess, onCancel }) => {
     }
   };
 
-  onCancel = () => {
+  const handleCancel = () => {
     navigate('/settings');
   };
-  onSuccess = () => {
-    navigate('/settings');
-  };
+
+  // Removed unused handleSuccess function
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
@@ -123,24 +151,31 @@ const NewUserForm: React.FC<NewUserFormProps> = ({ onSuccess, onCancel }) => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Nombre completo <span className="text-red-500">*</span>
             </label>
-            <select
-              name="profile_name"
-              value={formData.profile_name || ''}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">Seleccione un usuario</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.full_name}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                name="profile_name"
+                value={formData.profile_name || ''}
+                onChange={handleChange}
+                required
+                className={`w-full px-3 py-2 border ${existingRole ? 'border-yellow-400 bg-yellow-50' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+              >
+                <option value="">Seleccione un usuario</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.full_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {existingRole && (
+              <div className="absolute right-3 top-2 grap-10 transform -translate-y-1/2 text-yellow-600 text-sm">
+                Ya tiene rol: {existingRole}
+              </div>
+            )}
           </div>
 
           <div>
@@ -206,7 +241,7 @@ const NewUserForm: React.FC<NewUserFormProps> = ({ onSuccess, onCancel }) => {
           <div className="flex justify-end space-x-3 pt-4">
             <button
               type="button"
-              onClick={onCancel}
+              onClick={handleCancel}
               className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               disabled={loading}
             >
@@ -214,7 +249,7 @@ const NewUserForm: React.FC<NewUserFormProps> = ({ onSuccess, onCancel }) => {
             </button>
             <Button
               type="submit"
-              disabled={loading}
+              disabled={!!existingRole}
               className="px-4 py-2"
               onClick={handleSubmit}
             >
