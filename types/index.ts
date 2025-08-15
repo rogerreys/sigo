@@ -5,12 +5,6 @@ export interface User {
   name: string;
 }
 
-export interface Role {
-  id: string;
-  name: string;
-  description: string;
-}
-
 export interface Group {
   id: string;
   name: string;

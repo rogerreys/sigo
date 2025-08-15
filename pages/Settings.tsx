@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, FormEvent, useCallback } from 'react';
-import { userService, groupsService } from '../services/supabase';
+import { userService, groupsService, profileGroupService } from '../services/supabase';
 import { Database } from '../types/supabase';
 import Button from '../components/common/Button';
 import { PlusIcon } from '../utils/icons';
@@ -12,11 +12,11 @@ import { useGroup } from '../components/common/GroupContext';
 import { Group } from '../types/supabase';
 
 declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      [elemName: string]: any;
+    namespace JSX {
+        interface IntrinsicElements {
+            [elemName: string]: any;
+        }
     }
-  }
 }
 
 // User type is defined but not used in this component
@@ -46,7 +46,7 @@ const Settings: React.FC = () => {
 
     const handleCreateGroup = async (e: FormEvent) => {
         e.preventDefault();
-        
+
         if (!newGroup.name.trim()) {
             toast.error('❌ El nombre del grupo es requerido', {
                 position: 'top-right',
@@ -76,7 +76,7 @@ const Settings: React.FC = () => {
             if (error) {
                 throw new Error(error.message || 'Error al crear el grupo');
             }
-            
+
             toast.update(toastId, {
                 render: '✅ Grupo creado exitosamente',
                 type: 'success',
@@ -85,14 +85,14 @@ const Settings: React.FC = () => {
                 closeOnClick: true,
                 draggable: true,
             });
-            
+
             setShowGroupModal(false);
             setNewGroup({ name: '', description: '' });
             await Promise.all([fetchGroupsCreated(), fetchGroups()]);
-            
+
         } catch (error: any) {
             console.error('Error creating group:', error);
-            
+
             toast.update(toastId, {
                 render: `❌ ${error.message || 'Error al crear el grupo'}`,
                 type: 'error',
@@ -107,14 +107,23 @@ const Settings: React.FC = () => {
     const fetchUsers = useCallback(async () => {
         setLoading(true);
         if (!selectedGroup) return;
-        const { data, error } = await userService.getAll(selectedGroup.id);
-        if (error) {
+
+        try {
+            const { data, error } = await userService.getAll(selectedGroup.id);
+            if (error) throw error;
+            if (!data) return;
+
+            const { data: profileGroups, error: profileGroupsError } = await profileGroupService.getProfilesGroupsRoleByIds(data.map((user: User) => user.id), selectedGroup.id);
+            if (profileGroupsError) throw profileGroupsError;
+            if (!profileGroups) throw profileGroups;
+            
+            setUsers(profileGroups as User[]);
+        } catch (error) {
             console.error("Error fetching users:", error);
             toast.error('Error al cargar los usuarios');
-        } else if (data) {
-            setUsers(data as User[]);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     }, [selectedGroup]);
 
     useEffect(() => {
@@ -126,31 +135,22 @@ const Settings: React.FC = () => {
         <div className="container mx-auto p-4">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Configuración</h1>
-                <div className="flex gap-4">
-                    <Button 
+            </div>
+
+            {/* Sección de Grupos */}
+            <div className="bg-surface rounded-xl shadow-lg p-6 mb-8">
+                <div className="flex justify-between items-center mb-4 border-b pb-4">
+                    <h2 className="text-xl font-semibold mb-4">Grupos</h2>
+                    <Button
                         type="button"
                         onClick={() => setShowGroupModal(true)}
-                        variant="secondary"
+                        variant="primary"
                         className="flex items-center gap-2"
                     >
                         <PlusIcon className="w-4 h-4" />
                         Nuevo Grupo
                     </Button>
-                    <Button 
-                        type="button" 
-                        onClick={() => navigate('/settings/user')}
-                        className="flex items-center gap-2"
-                        variant="primary"
-                    >
-                        <PlusIcon className="w-4 h-4" />
-                        Nuevo Usuario
-                    </Button>
                 </div>
-            </div>
-
-            {/* Sección de Grupos */}
-            <div className="mb-8">
-                <h2 className="text-xl font-semibold mb-4">Grupos</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {groups.map((group: Group) => (
                         <div key={group.id} className="border rounded-lg p-4 shadow-sm">
@@ -179,8 +179,8 @@ const Settings: React.FC = () => {
                     <Input
                         label="Nombre del Grupo"
                         value={newGroup.name}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
-                          setNewGroup({...newGroup, name: e.target.value})
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            setNewGroup({ ...newGroup, name: e.target.value })
                         }
                         required
                         placeholder="Ej: Ventas, Soporte, etc."
@@ -191,8 +191,8 @@ const Settings: React.FC = () => {
                         </label>
                         <textarea
                             value={newGroup.description}
-                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => 
-                              setNewGroup({...newGroup, description: e.target.value})
+                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                                setNewGroup({ ...newGroup, description: e.target.value })
                             }
                             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                             rows={3}
@@ -217,9 +217,18 @@ const Settings: React.FC = () => {
             <div className="bg-surface rounded-xl shadow-lg p-6">
                 <div className="flex justify-between items-center mb-4 border-b pb-4">
                     <h2 className="text-xl font-semibold text-gray-700">Gestión de Personal y Roles</h2>
+                    <Button
+                        type="button"
+                        onClick={() => navigate('/settings/user')}
+                        className="flex items-center gap-2"
+                        variant="primary"
+                    >
+                        <PlusIcon className="w-4 h-4" />
+                        Nuevo Usuario
+                    </Button>
                 </div>
 
-                {loading ? <p>Cargando usuarios...</p> : (
+                {loading ? <p>Seleccione un grupo para continuar...</p> : (
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">

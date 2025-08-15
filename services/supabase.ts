@@ -123,7 +123,8 @@ export const clientService = {
     clientData: Omit<
       Tables["clients"]["Insert"],
       "id" | "user_id" | "created_at" | "updated_at"
-    >, groupId: string
+    >,
+    groupId: string
   ) => {
     try {
       const {
@@ -147,7 +148,7 @@ export const clientService = {
   // Actualizar un cliente
   update: async (
     id: string,
-    clientData: Partial<Tables["clients"]["Update"]>, 
+    clientData: Partial<Tables["clients"]["Update"]>,
     groupId: string
   ) => {
     try {
@@ -170,10 +171,10 @@ export const clientService = {
   delete: async (id: string, groupId: string) => {
     try {
       const { error } = await supabase
-      .from("clients")
-      .delete()
-      .eq("id", id)
-      .eq("group_id", groupId);
+        .from("clients")
+        .delete()
+        .eq("id", id)
+        .eq("group_id", groupId);
 
       if (error) throw error;
       return { data: { success: true }, error: null };
@@ -208,17 +209,21 @@ export const userService = {
   // Obtener todos los usuarios del usuario actual por grupo
   getAll: async (groupId: string) => {
     try {
-      console.log("groupId: ", groupId);
       // Identicamos los perfiles por el grupo
-      const { data: profgroup, error: profilesError } = await profileGroupService.getByGroup(groupId);
-      if(profilesError) return handleError(profilesError, "userService.getAll");
+      const { data: profgroup, error: profilesError } =
+        await profileGroupService.getByGroup(groupId);
+      if (profilesError)
+        return handleError(profilesError, "userService.getAll");
       if (!profgroup) return { data: [], error: null };
-      
+
       // Obtenemos los perfiles
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
-        .in("id", profgroup.map((p: any) => p.profile_id))
+        .in(
+          "id",
+          profgroup.map((p: any) => p.profile_id)
+        )
         .order("full_name", { ascending: true });
 
       if (error) throw error;
@@ -273,7 +278,8 @@ export const productService = {
     productData: Omit<
       Tables["products"]["Insert"],
       "id" | "user_id" | "created_at" | "updated_at"
-    >, groupId: string
+    >,
+    groupId: string
   ) => {
     try {
       const {
@@ -297,7 +303,7 @@ export const productService = {
   // Actualizar un producto
   update: async (
     id: string,
-    productData: Partial<Tables["products"]["Update"]>, 
+    productData: Partial<Tables["products"]["Update"]>,
     groupId: string
   ) => {
     try {
@@ -933,20 +939,20 @@ export const groupsService = {
   getById: async (groupItems: Array<{ group_id: string }>) => {
     try {
       // Extract just the group IDs from the array of objects
-      const groupIds = groupItems.map(item => item.group_id);
-      
+      const groupIds = groupItems.map((item) => item.group_id);
+
       // If no group IDs, return empty array
       if (groupIds.length === 0) {
         return { data: [], error: null };
       }
-  
+
       // Query the groups table with the extracted IDs
       const { data, error } = await supabase
         .from("groups")
         .select("*")
         .in("id", groupIds)
         .order("name", { ascending: true });
-  
+
       if (error) throw error;
       return { data, error: null };
     } catch (error) {
@@ -1118,12 +1124,12 @@ export const profileGroupService = {
       } = await supabase.auth.getUser();
 
       if (userError) {
-        console.error("Error getting user:", userError);
+        handleError(userError, "profileGroupService.getAll");
         throw new Error("Error de autenticación");
       }
 
       if (!user) {
-        console.log("No user session found");
+        handleError("No user session found", "profileGroupService.getAll");
         return { data: [], error: null }; // Return empty array instead of error
       }
 
@@ -1154,7 +1160,64 @@ export const profileGroupService = {
       if (error) throw error;
       return { data, error: null };
     } catch (error) {
-      console.error("Error fetching profile groups by group:", error);
+      handleError(error, "profileGroupService.getByGroup");
+      return { data: null, error };
+    }
+  },
+  getProfilesGroupsRoleByIds: async (profileIds: string[], groupId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select(`
+          id,
+          full_name,
+          email,
+          profile_groups!inner(
+            role
+          )
+        `)
+        .in('id', profileIds)
+        .in('profile_groups.profile_id', profileIds)
+        .eq('profile_groups.group_id', groupId);
+
+      if (error) throw error;
+      
+      return { 
+        data: data?.map(profile => ({
+          id: profile.id,
+          email: profile.email,
+          full_name: profile.full_name,
+          role: profile.profile_groups[0].role
+        })) || [],
+        error: null 
+      };
+    } catch (error) {
+      handleError(error, "profileGroupService.getByIds");
+      return { data: null, error };
+    }
+  },
+  create: async (profileGroupId: string, groupId: string, role: string) => {
+
+    try {
+      const { data, error } = await supabase
+        .from("profile_groups")
+        .insert([
+          {
+            profile_id: profileGroupId,
+            group_id: groupId,
+            role: role,
+            is_admin: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      handleError(error, "profileGroupService.create");
       return { data: null, error };
     }
   },
