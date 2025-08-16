@@ -49,6 +49,7 @@ const NewWorkOrder: React.FC = () => {
     const [selectedProductQuantity, setSelectedProductQuantity] = useState(1);
 
     const { selectedGroup } = useGroup();
+
     useEffect(() => {
         fetchData();
     }, [selectedGroup]);
@@ -62,15 +63,9 @@ const NewWorkOrder: React.FC = () => {
                 productService.getAll(selectedGroup.id),
                 userService.getAll(selectedGroup.id),
             ]);
-
             if (clientsRes.data) setClients(clientsRes.data as Client[]);
             if (productsRes.data) setProducts(productsRes.data as Product[]);
-            if (usersRes.data) {
-                const mechanics = (usersRes.data as Profiles[]).filter((u: Profiles) => u.role === 'staff');
-                setUsers(mechanics as Profiles[]);
-                if (mechanics.length > 0) setAssignedToId(mechanics[0].id.toString());
-            }
-
+            if (usersRes.data) setUsers(usersRes.data as Profiles[]);
         } catch (error) {
             console.error("Error fetching data for new work order:", error);
         } finally {
@@ -124,7 +119,6 @@ const NewWorkOrder: React.FC = () => {
     };
 
     const handleAssignToChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        console.log("e.target.value: ", e.target.value);
         setAssignedToId(e.target.value);
     };
 
