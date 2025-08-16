@@ -846,19 +846,12 @@ export const workOrderItemService = {
   },
 
   // Obtener los ítems de una orden de trabajo
-  getItems: async (workOrderId: string) => {
+  getItems: async (workOrderId: string, groupId: string) => {
     try {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuario no autenticado");
-
-      const { data: groupMembers } = await profileService.getGroupMembers();
-      const groupId = groupMembers?.group_id;
-
-      if (!groupId) {
-        throw new Error("No se pudo determinar el grupo del usuario");
-      }
 
       const { data, error } = await supabase
         .from("work_order_items")

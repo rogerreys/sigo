@@ -33,14 +33,12 @@ const WorkOrders: React.FC = () => {
                 clientService.getAll(selectedGroup.id),
                 workOrderService.getAll(selectedGroup.id),
                 userService.getAll(selectedGroup.id)
+                // profileService.getById()
             ]);
             
             if (clientsRes.data) setClients(clientsRes.data as Client[]);
             if (workOrdersRes.data) setWorkOrders(workOrdersRes.data as WorkOrders[]);
-            if (profilesRes.data) {
-                const mechanics = (profilesRes.data as Profiles[]).filter((u: Profiles) => u.role === 'staff');
-                setUsers(mechanics as Profiles[]);
-            }
+            if (profilesRes.data) setUsers(profilesRes.data as Profiles[]);
         } catch (error) {
             console.error("Error fetching data for work orders:", error);
         } finally {

@@ -4,6 +4,7 @@ import { WorkOrders, WorkOrderItems, Product, WorkOrderStatus, WorkOrderStatusFr
 import Button from '../common/Button';
 import { MdWork } from "react-icons/md";
 import { workOrderItemService, productService } from '../../services/supabase';
+import { useGroup } from '../common/GroupContext';
 
 interface WorkOrderDetailModalProps {
     order: WorkOrders | null;
@@ -17,24 +18,28 @@ const WorkOrderDetailModal: React.FC<WorkOrderDetailModalProps> = ({ order, isOp
     const [editableOrder, setEditableOrder] = useState<WorkOrders | null>(null);
     const [workOrderItems, setWorkOrderItems] = useState<WorkOrderItems[]>([]);
     const [productsItems, setProductsItems] = useState<Product[]>([]);
+    const { selectedGroup } = useGroup();
+    
+    const fetchWorkOrderItems = async () => {
+        if (!selectedGroup) return;
+        try {
+            const [workitems, products] = await Promise.all([
+                workOrderItemService.getItems(order?.work_order_items_id || '', selectedGroup.id),
+                productService.getAll(selectedGroup.id)
+            ]);
+            console.log("Items:", workitems.data);
+            console.log("Products:", products.data);
+            if (workitems.data) setWorkOrderItems(workitems.data as WorkOrderItems[] || []);
+            if (products.data) setProductsItems(products.data as Product[] || []);
+        } catch (error) {
+            console.error('Error fetching work order items:', error);
+        }
+    };
 
     useEffect(() => {
         if (order) {
             setEditableOrder({ ...order });
-
-            const fetchWorkOrderItems = async () => {
-                try {
-                    const items = await workOrderItemService.getItems(order?.work_order_items_id || '');
-                    const products = await productService.getAll();
-                    setWorkOrderItems(items.data as WorkOrderItems[] || []);
-                    setProductsItems(products.data as Product[] || []);
-                } catch (error) {
-                    console.error('Error fetching work order items:', error);
-                }
-            };
-
             fetchWorkOrderItems();
-
         }
     }, [order]);
 
