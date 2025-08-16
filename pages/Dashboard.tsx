@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { supabase } from '../services/supabase';
-import { Client, Product, WorkOrder, WorkOrderStatus } from '../types';
+import { WorkOrder, WorkOrderStatus } from '../types';
 import Card from '../components/common/Card';
 import { UsersIcon, InventoryIcon, WorkOrderIcon } from '../utils/icons';
 

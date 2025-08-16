@@ -1,13 +1,19 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { DashboardIcon, UsersIcon, InventoryIcon, WorkOrderIcon, SettingsIcon } from '../../utils/icons';
+import { 
+  DashboardIcon,
+  CustomersIcon,
+  InventoryIcon,
+  MdAssignmentIcon,
+  SettingsIcon
+} from "../../utils/icons";
 
 const navItems = [
   { to: '/dashboard', icon: DashboardIcon, label: 'Dashboard' },
-  { to: '/clients', icon: UsersIcon, label: 'Clientes' },
+  { to: '/clients', icon: CustomersIcon, label: 'Clientes' },
   { to: '/inventory', icon: InventoryIcon, label: 'Inventario' },
-  { to: '/work-orders', icon: WorkOrderIcon, label: 'Órdenes de Trabajo' },
+  { to: '/work-orders', icon: MdAssignmentIcon, label: 'Órdenes de Trabajo' },
   { to: '/settings', icon: SettingsIcon, label: 'Configuración' },
 ];
 

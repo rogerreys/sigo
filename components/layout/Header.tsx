@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { LogoutIcon, ChevronDownIcon, UserCircleIcon } from '../../utils/icons';
-import { groupsService } from '../../services/supabase';
 import { useGroup } from '../../components/common/GroupContext';
 
 const Header: React.FC = () => {
