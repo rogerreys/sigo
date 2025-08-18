@@ -665,6 +665,7 @@ export const workOrderService = {
   // Actualizar una orden de trabajo
   update: async (
     id: string,
+    groupId: string,
     orderData: Partial<Tables["work_orders"]["Update"]>
   ) => {
     try {
@@ -672,6 +673,7 @@ export const workOrderService = {
         .from("work_orders")
         .update(orderData)
         .eq("id", id)
+        .eq("group_id", groupId)
         .select()
         .single();
 

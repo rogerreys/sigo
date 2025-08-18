@@ -101,8 +101,8 @@ const NewWorkOrder: React.FC = () => {
                         unitPrice: item.product_unit_price,
                         productName: product.name
                     };
-                    setAddedItems(prevItems => [...prevItems, productItem]);
 
+                    setAddedItems(prevItems => [...prevItems, productItem]);
                 }
             }
         }
@@ -188,7 +188,7 @@ const NewWorkOrder: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
+        if (!selectedGroup) return;
         if (!selectedClientId) {
             alert('Por favor, seleccione un cliente.');
             return;
@@ -221,19 +221,22 @@ const NewWorkOrder: React.FC = () => {
             };
 
             // 3. Create the work order
-            const { data: workOrder, error: workOrderError } = await workOrderService.create(newWorkOrderData);
-
-            if (workOrderError) {
-                throw workOrderError;
-            }
-
-            if (!workOrder) {
-                throw new Error('No se pudo crear la orden de trabajo');
+            let workOrderId: string;
+            if(id){
+                workOrderId = id; // Use the existing ID when updating
+                const { data: workOrder, error: workOrderError } = await workOrderService.update(workOrderId, selectedGroup.id, newWorkOrderData);
+                if (workOrderError) throw workOrderError;
+                if (!workOrder) throw new Error('No se pudo actualizar la orden de trabajo');
+            } else {
+                const { data: workOrder, error: workOrderError } = await workOrderService.create(newWorkOrderData);
+                if (workOrderError) throw workOrderError;
+                if (!workOrder) throw new Error('No se pudo crear la orden de trabajo');
+                workOrderId = workOrder.id;
             }
 
             // 1. First, create the work order with a unique ID
             const workOrderItemId = crypto.randomUUID();
-            const workOrderId = workOrder.id;
+            //const workOrderId = workOrder.id;
 
             // 4. Add services to the work order
             for (const service of addedServices) {
@@ -289,23 +292,6 @@ const NewWorkOrder: React.FC = () => {
         } finally {
             setIsSubmitting(false);
         }
-        /*
-        const { error } = await workOrderService.create(newWorkOrderData);
-        if (error) {
-            console.error('Error creating work order:', error);
-            alert(`Error al crear la orden: ${error.message}`);
-            return;
-        }
-
-        setIsSubmitting(false);
-        if (error) {
-            console.error('Error creating work order:', error);
-            alert(`Error al crear la orden: ${error.message}`);
-        } else {
-            alert('Orden de trabajo creada con éxito.');
-            navigate('/work-orders');
-        }
-            */
     };
 
     const commonInputClass = "block w-full bg-gray-50 border border-gray-300 rounded-md py-2 px-3 text-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500";
