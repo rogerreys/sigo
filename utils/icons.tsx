@@ -8,10 +8,15 @@ import { CgWorkAlt } from "react-icons/cg";
 import { GrCircleInformation } from "react-icons/gr";
 import { GoXCircle } from "react-icons/go";
 import { CiFilter } from "react-icons/ci";
+import { IoIosStats } from "react-icons/io";
 
 type IconProps = {
     className?: string;
 };
+
+export const StatsIcon: React.FC<IconProps> = ({ className }: IconProps) => (
+    <IoIosStats className={className} />
+);
 
 export const FilterIcon: React.FC<IconProps> = ({ className }: IconProps) => (
     <CiFilter className={className} />
