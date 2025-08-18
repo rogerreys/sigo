@@ -18,6 +18,7 @@ const WorkOrderDetailModal: React.FC<WorkOrderDetailModalProps> = ({ order, isOp
     const [editableOrder, setEditableOrder] = useState<WorkOrders | null>(null);
     const [workOrderItems, setWorkOrderItems] = useState<WorkOrderItems[]>([]);
     const [productsItems, setProductsItems] = useState<Product[]>([]);
+    const [isDisabledByStatus, setisDisabledByStatus] = useState(false);
     const { selectedGroup } = useGroup();
     
     const fetchWorkOrderItems = async () => {
@@ -27,8 +28,6 @@ const WorkOrderDetailModal: React.FC<WorkOrderDetailModalProps> = ({ order, isOp
                 workOrderItemService.getItems(order?.work_order_items_id || '', selectedGroup.id),
                 productService.getAll(selectedGroup.id)
             ]);
-            console.log("Items:", workitems.data);
-            console.log("Products:", products.data);
             if (workitems.data) setWorkOrderItems(workitems.data as WorkOrderItems[] || []);
             if (products.data) setProductsItems(products.data as Product[] || []);
         } catch (error) {
@@ -39,6 +38,9 @@ const WorkOrderDetailModal: React.FC<WorkOrderDetailModalProps> = ({ order, isOp
     useEffect(() => {
         if (order) {
             setEditableOrder({ ...order });
+            if (order.status === WorkOrderStatus.Completed || order.status === WorkOrderStatus.Billed) {
+                setisDisabledByStatus(true);
+            }
             fetchWorkOrderItems();
         }
     }, [order]);
@@ -117,6 +119,7 @@ const WorkOrderDetailModal: React.FC<WorkOrderDetailModalProps> = ({ order, isOp
                                     value={WorkOrderStatusFront[editableOrder.status]}
                                     onChange={handleStatusChange}
                                     className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                                    disabled={isDisabledByStatus}
                                 >
                                     {Object.values(WorkOrderStatusFront).map(status => (
                                         <option key={status} value={status}>{status}</option>
@@ -130,6 +133,7 @@ const WorkOrderDetailModal: React.FC<WorkOrderDetailModalProps> = ({ order, isOp
                                     rows={4}
                                     value={editableOrder.diagnostic_notes}
                                     onChange={handleDescriptionChange}
+                                    disabled={isDisabledByStatus}
                                     className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
                                 />
                             </div>
@@ -186,9 +190,11 @@ const WorkOrderDetailModal: React.FC<WorkOrderDetailModalProps> = ({ order, isOp
                     <Button variant="secondary" onClick={onClose} className="mr-4" disabled={isLoading}>
                         Cancelar
                     </Button>
-                    <Button onClick={handleSaveClick} isLoading={isLoading}>
-                        Guardar Cambios
-                    </Button>
+                    {!isDisabledByStatus && (
+                        <Button onClick={handleSaveClick} isLoading={isLoading}>
+                            Guardar Cambios
+                        </Button>
+                    )}
                 </div>
             </div>
         </div>

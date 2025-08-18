@@ -258,13 +258,13 @@ export const productService = {
   },
 
   // Obtener un producto por ID
-  getById: async (id: string) => {
+  getById: async (id: string[], groupId: string) => {
     try {
       const { data, error } = await supabase
         .from("products")
         .select("*")
-        .eq("id", id)
-        .single();
+        .in("id", id)
+        .eq("group_id", groupId);
 
       if (error) throw error;
       return { data, error: null };
@@ -574,7 +574,7 @@ export const workOrderService = {
       const { data, error } = await supabase
         .from("work_orders")
         .select("*")
-        .eq("user_id", user.id)
+        //.eq("user_id", user.id)
         .eq("group_id", groupId)
         .order("created_at", { ascending: false });
 
@@ -586,21 +586,13 @@ export const workOrderService = {
   },
 
   // Obtener una orden de trabajo por ID
-  getById: async (id: string) => {
+  getById: async (id: string, groupId: string) => {
     try {
       const { data, error } = await supabase
         .from("work_orders")
-        .select(
-          `
-          *,
-          clients (*),
-          work_order_items (
-            *,
-            products (*)
-          )
-        `
-        )
+        .select(`*`)
         .eq("id", id)
+        .eq("group_id", groupId)
         .single();
 
       if (error) throw error;
@@ -857,7 +849,6 @@ export const workOrderItemService = {
         .from("work_order_items")
         .select("*")
         .eq("work_order_id", workOrderId)
-        .eq("user_id", user.id)
         .eq("group_id", groupId);
       // .order("created_at", { ascending: true });
 

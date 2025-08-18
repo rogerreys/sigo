@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { Client, Profiles, WorkOrders, WorkOrderStatus, WorkOrderStatusFront } from '../types';
 import Button from '../components/common/Button';
-import { PlusIcon, SearchIcon, CheckCircleIcon, ClockIcon, PauseCircleIcon, DocumentTextIcon, XCircleIcon, FilterIcon, ChevronDownIcon } from '../utils/icons';
+import { EditIcon, PlusIcon, SearchIcon, CheckCircleIcon, ClockIcon, PauseCircleIcon, DocumentTextIcon, XCircleIcon, FilterIcon, ChevronDownIcon } from '../utils/icons';
 import { useNavigate } from 'react-router-dom';
 import { workOrderService, clientService, userService } from '../services/supabase';
 import WorkOrderDetailModal from '../components/common/WorkOrderDetailModal';
@@ -28,14 +28,14 @@ const WorkOrders: React.FC = () => {
         try {
             setLoading(true);
             if (!selectedGroup) return;
-            
+
             const [clientsRes, workOrdersRes, profilesRes] = await Promise.all([
                 clientService.getAll(selectedGroup.id),
                 workOrderService.getAll(selectedGroup.id),
                 userService.getAll(selectedGroup.id)
                 // profileService.getById()
             ]);
-            
+
             if (clientsRes.data) setClients(clientsRes.data as Client[]);
             if (workOrdersRes.data) setWorkOrders(workOrdersRes.data as WorkOrders[]);
             if (profilesRes.data) setUsers(profilesRes.data as Profiles[]);
@@ -75,7 +75,7 @@ const WorkOrders: React.FC = () => {
     ];
 
     const filterOptions = ['All', ...Object.values(WorkOrderStatus)];
-    
+
     const filteredWorkOrders = useMemo(() => {
         return workOrders
             .filter(wo => {
@@ -124,22 +124,30 @@ const WorkOrders: React.FC = () => {
     const handleSaveWorkOrder = async (updatedOrder: WorkOrders) => {
         setIsSaving(true);
         const { id, status, diagnostic_notes } = updatedOrder;
+        const updateData = { id, status, diagnostic_notes };
 
-        // The mock API only needs the changed fields + id
-        const { error } = await workOrderService.update(id, { id, status, diagnostic_notes });
-
-        if (error) {
-            console.error('Error updating work order:', error.message);
-            // You could show an error toast/message to the user here
-        } else {
+        try {
+            if (status === 'completed') {
+                const completed_at = new Date().toISOString();
+                const { error } = await workOrderService.update(id, { ...updateData, completed_at });
+                if (error) throw error;
+            } else {
+                const { error } = await workOrderService.update(id, updateData);
+                if (error) throw error;
+            }
+            
             setWorkOrders(prevOrders =>
-                prevOrders.map(order =>
-                    order.id === id ? { ...order, status, diagnostic_notes } : order
+                prevOrders.map(order => 
+                    order.id === id ? { ...order, ...updateData } : order
                 )
             );
             handleCloseModal();
+        } catch (error) {
+            console.error('Error updating work order:', error.message);
+            // You could show an error toast/message to the user here
+        } finally {
+            setIsSaving(false);
         }
-        setIsSaving(false);
     };
     return (
         <div>
@@ -238,7 +246,8 @@ const WorkOrders: React.FC = () => {
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asignado a</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Creada</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Completado</th>
                                     <th className="relative px-6 py-3"><span className="sr-only">Acciones</span></th>
                                 </tr>
                             </thead>
@@ -255,8 +264,12 @@ const WorkOrders: React.FC = () => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${wo.total?.toFixed(2) || '0.00'}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(wo.created_at).toLocaleDateString()}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{wo.completed_at ? new Date(wo.completed_at).toLocaleDateString() : '-'}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <Button variant="secondary" className="text-xs py-1 px-3" onClick={() => handleViewDetails(wo)}>Ver</Button>
+                                            <div className="flex gap-2">
+                                                <Button variant="secondary" className="text-xs py-1 px-3" onClick={() => handleViewDetails(wo)}>Ver</Button>
+                                                <Button icon={<EditIcon/>} onClick={() => navigate(`/work-orders/new/${wo.id}`)}>Editar</Button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -271,7 +284,7 @@ const WorkOrders: React.FC = () => {
                 onClose={handleCloseModal}
                 onSave={handleSaveWorkOrder}
                 isLoading={isSaving}
-                client_name={clients.find(c => c.id === selectedWorkOrder?.client_id)?.first_name+" "+clients.find(c => c.id === selectedWorkOrder?.client_id)?.last_name}
+                client_name={clients.find(c => c.id === selectedWorkOrder?.client_id)?.first_name + " " + clients.find(c => c.id === selectedWorkOrder?.client_id)?.last_name}
                 assignedTo={users.find(u => u.id === selectedWorkOrder?.profile_id)?.full_name}
             />
         </div>
