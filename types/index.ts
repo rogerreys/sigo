@@ -34,16 +34,20 @@ export interface Product {
   barcode?: string;
 }
 
-export interface Service {
-  id: string;
-  description: string;
-  price: number;
+export interface ServiceItem {
+  id?: string;
+  work_order_id?: string;
+  service_description: string;
+  service_price: number;
 }
 
-export interface WorkOrderItem {
-  productId: string;
-  quantity: number;
-  unitPrice: number;
+export interface ProductItem {
+  id?: string;
+  work_order_id?: string;
+  product_id?: string;
+  product_quantity?: number;
+  product_unit_price?: number;
+  product_name?: string;
 }
 
 export interface WorkOrderItems {

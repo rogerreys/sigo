@@ -615,20 +615,14 @@ export const workOrderService = {
       | "created_at"
       | "updated_at"
       | "status"
-    >
+    >,
+    groupId: string
   ) => {
     try {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuario no autenticado");
-
-      const { data: groupMembers } = await profileService.getGroupMembers();
-      const groupId = groupMembers?.group_id;
-
-      if (!groupId) {
-        throw new Error("No se pudo determinar el grupo del usuario");
-      }
 
       // Create the work order data with all required fields and defaults
       const now = new Date().toISOString();
@@ -744,7 +738,8 @@ export const workOrderItemService = {
     itemData: Omit<
       Tables["work_order_items"]["Insert"],
       "user_id" | "group_id" | "created_at" | "updated_at"
-    >
+    >,
+    groupId: string
   ) => {
     try {
       const {
@@ -752,18 +747,13 @@ export const workOrderItemService = {
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuario no autenticado");
 
-      const { data: groupMembers } = await profileService.getGroupMembers();
-      if (!groupMembers?.group_id) {
-        throw new Error("El usuario no pertenece a ningún grupo");
-      }
-
       const { data, error } = await supabase
         .from("work_order_items")
         .insert([
           {
             ...itemData,
             user_id: user.id,
-            group_id: groupMembers.group_id,
+            group_id: groupId,
           },
         ])
         .select()
@@ -779,6 +769,8 @@ export const workOrderItemService = {
   // Actualizar un ítem de orden de trabajo
   updateItem: async (
     itemId: string,
+    group_id: string,
+    work_order_id: string,
     itemData: Partial<Tables["work_order_items"]["Update"]>
   ) => {
     try {
@@ -791,8 +783,10 @@ export const workOrderItemService = {
         // Obtener el ítem actual para calcular el nuevo total
         const { data: currentItem, error: fetchError } = await supabase
           .from("work_order_items")
-          .select("quantity, unit_price, discount_percent")
+          .update(itemData)
           .eq("id", itemId)
+          .eq("group_id", group_id)
+          .eq("work_order_id", work_order_id)
           .single();
 
         if (fetchError) throw fetchError;
