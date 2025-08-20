@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { workOrderService, clientService, userService } from '../services/supabase';
 import WorkOrderDetailModal from '../components/common/WorkOrderDetailModal';
 import { useGroup } from '../components/common/GroupContext';
+import Swal from 'sweetalert2';
 
 const WorkOrders: React.FC = () => {
     const [workOrders, setWorkOrders] = useState<WorkOrders[]>([]);
@@ -41,6 +42,11 @@ const WorkOrders: React.FC = () => {
             if (profilesRes.data) setUsers(profilesRes.data as Profiles[]);
         } catch (error) {
             console.error("Error fetching data for work orders:", error);
+            Swal.fire({
+                icon: "error",
+                title: "Oops...",
+                text: "Error al cargar los datos"
+            });
         } finally {
             setLoading(false);
         }
@@ -127,12 +133,13 @@ const WorkOrders: React.FC = () => {
         const updateData = { id, status, diagnostic_notes };
 
         try {
+            if (!selectedGroup) throw new Error("Grupo no seleccionado");
             if (status === 'completed') {
                 const completed_at = new Date().toISOString();
-                const { error } = await workOrderService.update(id, { ...updateData, completed_at });
+                const { error } = await workOrderService.update(id, selectedGroup.id, { ...updateData, completed_at });
                 if (error) throw error;
             } else {
-                const { error } = await workOrderService.update(id, updateData);
+                const { error } = await workOrderService.update(id, selectedGroup.id, updateData);
                 if (error) throw error;
             }
             
@@ -141,10 +148,19 @@ const WorkOrders: React.FC = () => {
                     order.id === id ? { ...order, ...updateData } : order
                 )
             );
+            Swal.fire({
+                icon: "success",
+                title: "Exito...",
+                text: "Orden de trabajo actualizada exitosamente"
+            });
             handleCloseModal();
         } catch (error) {
-            console.error('Error updating work order:', error.message);
-            // You could show an error toast/message to the user here
+            console.error('Error updating work order:', error);
+            Swal.fire({
+                icon: "error",
+                title: "Oops...",
+                text: `Error al cargar los datos: ${error || 'No especificado'}`
+            });
         } finally {
             setIsSaving(false);
         }
