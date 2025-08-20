@@ -7,9 +7,9 @@ import { PlusIcon, EditIcon, DeleteIcon } from '../utils/icons';
 import { useNavigate } from 'react-router-dom';
 import Modal from '../components/common/Modal';
 import Input from '../components/common/Input';
-import { toast } from 'react-toastify';
 import { useGroup } from '../components/common/GroupContext';
 import { Group } from '../types/supabase';
+import Swal from 'sweetalert2';
 
 declare global {
     namespace JSX {
@@ -38,7 +38,11 @@ const Settings: React.FC = () => {
         const { data, error } = await groupsService.getCreatedBy();
         if (error) {
             console.error('Error fetching groups:', error);
-            toast.error('Error al cargar los grupos');
+            Swal.fire({
+                icon: "error",
+                title: "Oops...",
+                text: "Error al cargar los grupos"
+            });
         } else {
             setGroups(data || []);
         }
@@ -48,23 +52,20 @@ const Settings: React.FC = () => {
         e.preventDefault();
 
         if (!newGroup.name.trim()) {
-            toast.error('❌ El nombre del grupo es requerido', {
-                position: 'top-right',
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
+            Swal.fire({
+                icon: "error",
+                title: "Oops...",
+                text: "El nombre del grupo es requerido"
             });
             return;
         }
 
-        const toastId = toast.loading('Creando grupo...', {
-            position: 'top-right',
-            autoClose: false,
-            closeOnClick: false,
-            draggable: false,
+        const loadingSwal = Swal.fire({
+            title: 'Creando grupo...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
         });
 
         try {
@@ -73,17 +74,15 @@ const Settings: React.FC = () => {
                 description: newGroup.description?.trim() || null
             });
 
-            if (error) {
-                throw new Error(error.message || 'Error al crear el grupo');
-            }
+            if (error) throw new Error(error.message || 'Error al crear el grupo');
 
-            toast.update(toastId, {
-                render: '✅ Grupo creado exitosamente',
-                type: 'success',
-                isLoading: false,
-                autoClose: 3000,
-                closeOnClick: true,
-                draggable: true,
+            await loadingSwal.close();
+            
+            await Swal.fire({
+                title: "¡Éxito!",
+                text: "Grupo creado exitosamente",
+                icon: "success",
+                confirmButtonText: 'Aceptar'
             });
 
             setShowGroupModal(false);
@@ -92,14 +91,13 @@ const Settings: React.FC = () => {
 
         } catch (error: any) {
             console.error('Error creating group:', error);
+            await loadingSwal.close();
 
-            toast.update(toastId, {
-                render: `❌ ${error.message || 'Error al crear el grupo'}`,
-                type: 'error',
-                isLoading: false,
-                autoClose: 5000,
-                closeOnClick: true,
-                draggable: true,
+            Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: error.message || 'Error al crear el grupo',
+                confirmButtonText: 'Aceptar'
             });
         }
     };
@@ -116,7 +114,7 @@ const Settings: React.FC = () => {
             const { data: profileGroups, error: profileGroupsError } = await profileGroupService.getProfilesGroupsRoleByIds(data.map((user: User) => user.id), selectedGroup.id);
             if (profileGroupsError) throw profileGroupsError;
             if (!profileGroups) throw profileGroups;
-            
+
             setUsers(profileGroups as User[]);
         } catch (error) {
             console.error("Error fetching users:", error);
@@ -133,7 +131,7 @@ const Settings: React.FC = () => {
 
     const handleDelete = async (id: string) => {
         try {
-            
+
         } catch (error) {
             console.error('Error deleting client:', error);
         }
@@ -263,7 +261,7 @@ const Settings: React.FC = () => {
                                             <button className="text-primary-600 hover:text-primary-900 mr-4" onClick={() => navigate(`/clients/new/${user.id}`)}><EditIcon className="h-5 w-5" /></button>
                                             <button className="text-red-600 hover:text-red-900" onClick={() => handleDelete(user.id)}><DeleteIcon className="h-5 w-5" /></button>
                                         </td>
-                                        
+
                                     </tr>
                                 ))}
                             </tbody>

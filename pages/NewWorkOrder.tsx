@@ -7,6 +7,7 @@ import { XCircleIcon } from '../utils/icons';
 import { clientService, productService, userService, workOrderItemService, workOrderService } from '../services/supabase';
 import { useGroup } from '../components/common/GroupContext';
 import GroupGuard from '../components/common/GroupGuard';
+import Swal from 'sweetalert2';
 
 // A small helper component for form rows
 const FormRow: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
@@ -206,11 +207,11 @@ const NewWorkOrder: React.FC = () => {
         e.preventDefault();
         if (!selectedGroup) return;
         if (!selectedClientId) {
-            alert('Por favor, seleccione un cliente.');
+            Swal.fire("Por favor, seleccione un cliente.");
             return;
         }
         if (addedServices.length === 0 && addedProducItems.length === 0) {
-            alert('Por favor, añada al menos un servicio o repuesto.');
+            Swal.fire("Por favor, añada al menos un servicio o repuesto.");
             return;
         }
 
@@ -299,12 +300,20 @@ const NewWorkOrder: React.FC = () => {
             }
             
             // 6. Show success message and navigate
-            alert('Orden de trabajo creada exitosamente');
+            Swal.fire({
+                title: id ? "Orden de trabajo actualizada exitosamente" : "Orden de trabajo creada exitosamente",
+                icon: "success",
+                draggable: true
+              });
             navigate('/work-orders');
 
         } catch (error) {
-            console.error('Error creating work order:', error);
-            alert(`Error al crear la orden de trabajo: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+            Swal.fire({
+                icon: "error",
+                title: "Oops...",
+                text: `Error al crear la orden de trabajo: ${error instanceof Error ? error.message : 'Error desconocido'}`,
+                footer: '<a href="#">Why do I have this issue?</a>'
+              });
         } finally {
             setIsSubmitting(false);
         }
