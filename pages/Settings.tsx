@@ -2,13 +2,13 @@
 import React, { useState, useEffect, FormEvent, useCallback } from 'react';
 import { userService, groupsService, profileGroupService } from '../services/supabase';
 import { Database } from '../types/supabase';
+import { Group } from '../types';
 import Button from '../components/common/Button';
 import { PlusIcon, EditIcon, DeleteIcon } from '../utils/icons';
 import { useNavigate } from 'react-router-dom';
 import Modal from '../components/common/Modal';
 import Input from '../components/common/Input';
 import { useGroup } from '../components/common/GroupContext';
-import { Group } from '../types/index';
 import Swal from 'sweetalert2';
 
 declare global {
@@ -29,6 +29,7 @@ const Settings: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [showGroupModal, setShowGroupModal] = useState(false);
     const [newGroup, setNewGroup] = useState({
+        id: '',
         name: '',
         description: ''
     });
@@ -60,8 +61,13 @@ const Settings: React.FC = () => {
             return;
         }
 
+        const isEditing = !!newGroup.id;
+        const loadingMessage = isEditing ? 'Actualizando grupo...' : 'Creando grupo...';
+        const successMessage = isEditing ? 'Grupo actualizado exitosamente' : 'Grupo creado exitosamente';
+        const errorMessage = isEditing ? 'Error al actualizar el grupo' : 'Error al crear el grupo';
+
         const loadingSwal = Swal.fire({
-            title: 'Creando grupo...',
+            title: loadingMessage,
             allowOutsideClick: false,
             didOpen: () => {
                 Swal.showLoading();
@@ -69,34 +75,46 @@ const Settings: React.FC = () => {
         });
 
         try {
-            const { error } = await groupsService.create({
-                name: newGroup.name.trim(),
-                description: newGroup.description?.trim() || null
-            });
+            let error;
+            
+            if (isEditing) {
+                const result = await groupsService.update(newGroup.id, {
+                    name: newGroup.name.trim(),
+                    description: newGroup.description?.trim() || null,
+                    updated_at: new Date().toISOString()
+                });
+                error = result.error;
+            } else {
+                const result = await groupsService.create({
+                    name: newGroup.name.trim(),
+                    description: newGroup.description?.trim() || null
+                });
+                error = result.error;
+            }
 
-            if (error) throw new Error(error.message || 'Error al crear el grupo');
+            if (error) throw new Error(error.message || errorMessage);
 
             await loadingSwal.close();
 
             await Swal.fire({
                 title: "¡Éxito!",
-                text: "Grupo creado exitosamente",
+                text: successMessage,
                 icon: "success",
                 confirmButtonText: 'Aceptar'
             });
 
             setShowGroupModal(false);
-            setNewGroup({ name: '', description: '' });
+            setNewGroup({ id: '', name: '', description: '' });
             await Promise.all([fetchGroupsCreated(), fetchGroups()]);
 
         } catch (error: any) {
-            console.error('Error creating group:', error);
+            console.error('Error:', error);
             await loadingSwal.close();
 
             Swal.fire({
                 icon: "error",
                 title: "Error",
-                text: error.message || 'Error al crear el grupo',
+                text: error.message || errorMessage,
                 confirmButtonText: 'Aceptar'
             });
         }
@@ -174,6 +192,22 @@ const Settings: React.FC = () => {
         }
     };
 
+    const handleEdit = async (group: Group) => {
+        try {
+            setShowGroupModal(true);
+            setNewGroup({ id: group.id, name: group.name, description: group.description || '' });
+            
+        } catch (error) {
+            console.error('Error editing group:', error);
+            await Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: error as string || 'Error al editar el grupo',
+                confirmButtonText: 'Aceptar'
+            });
+        }
+    };
+
     return (
         <div className="container mx-auto p-4">
             <div className="flex justify-between items-center mb-6">
@@ -196,7 +230,7 @@ const Settings: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {groups.map((group: Group) => (
-                        <div key={group.id} className="border rounded-lg p-4 shadow-sm relative">
+                        <div className="border rounded-lg p-4 shadow-sm relative">
                             <div className="absolute top-2 right-2 flex gap-2">
                                 <Button
                                     type="button"
@@ -222,7 +256,7 @@ const Settings: React.FC = () => {
                                 <p className="text-sm text-gray-600 mt-1">{group.description}</p>
                             )}
                             <div className="text-xs text-gray-500 mt-2">
-                                Creado: {new Date(group.created_at).toLocaleDateString()}
+                                Creado: {new Date(group.created_at || '').toLocaleDateString()}
                             </div>
                         </div>
                     ))}
@@ -234,9 +268,9 @@ const Settings: React.FC = () => {
                 isOpen={showGroupModal}
                 onClose={() => {
                     setShowGroupModal(false);
-                    setNewGroup({ name: '', description: '' });
+                    setNewGroup({ id: '', name: '', description: '' });
                 }}
-                title="Nuevo Grupo"
+                title={newGroup.id ? "Editar Grupo" : "Nuevo Grupo"}
             >
                 <form onSubmit={(e: React.FormEvent) => handleCreateGroup(e)} className="space-y-4">
                     <Input
@@ -271,7 +305,7 @@ const Settings: React.FC = () => {
                             Cancelar
                         </Button>
                         <Button type="submit">
-                            Crear Grupo
+                            {newGroup.id ? "Actualizar Grupo" : "Crear Grupo"}
                         </Button>
                     </div>
                 </form>
