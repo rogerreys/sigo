@@ -1035,7 +1035,15 @@ export const groupsService = {
   // Eliminar un grupo
   delete: async (id: string) => {
     try {
-      const { error } = await supabase.from("groups").delete().eq("id", id);
+      // Solo el que creo el grupo puede eliminarlo
+      const { data: { user }, error: error_user } = await supabase.auth.getUser();
+      if (error_user) throw error_user;
+      if (!user) throw new Error("Usuario no autenticado");
+      // Eliminar el grupo por el usuario actual
+      const { error } = await supabase.from("groups")
+      .delete()
+      .eq("id", id)
+      .eq("created_by", user.id);
 
       if (error) throw error;
       return { error: null };

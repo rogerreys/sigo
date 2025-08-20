@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import Modal from '../components/common/Modal';
 import Input from '../components/common/Input';
 import { useGroup } from '../components/common/GroupContext';
-import { Group } from '../types/supabase';
+import { Group } from '../types/index';
 import Swal from 'sweetalert2';
 
 declare global {
@@ -77,7 +77,7 @@ const Settings: React.FC = () => {
             if (error) throw new Error(error.message || 'Error al crear el grupo');
 
             await loadingSwal.close();
-            
+
             await Swal.fire({
                 title: "¡Éxito!",
                 text: "Grupo creado exitosamente",
@@ -129,11 +129,48 @@ const Settings: React.FC = () => {
         fetchGroupsCreated();
     }, [fetchUsers]);
 
-    const handleDelete = async (id: string) => {
+    const handleDelete = async (id: string, option: string) => {
         try {
+            const result = await Swal.fire({
+                title: '¿Estás seguro?',
+                text: `¿Deseas eliminar este ${option === 'group' ? 'grupo' : 'usuario'}?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            });
 
+            if (!result.isConfirmed) return;
+
+            if (option === 'group') {
+                const { error } = await groupsService.delete(id);
+                if (error) throw error;
+                // Actualizar la lista de grupos después de eliminar
+                await Promise.all([fetchGroupsCreated(), fetchGroups()]);
+            } else if (option === 'staff') {
+                // TODO
+                // const { error } = await userService.delete(id);
+                // if (error) throw error;
+                // Actualizar la lista de usuarios si es necesario
+                // await fetchUsers();
+            }
+
+            await Swal.fire({
+                title: "¡Éxito!",
+                text: `${option === 'group' ? 'Grupo' : 'Usuario'} eliminado exitosamente`,
+                icon: "success",
+                confirmButtonText: 'Aceptar'
+            });
         } catch (error) {
             console.error('Error deleting client:', error);
+            await Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: error as string || 'Error al eliminar el cliente',
+                confirmButtonText: 'Aceptar'
+            });
         }
     };
 
@@ -159,8 +196,28 @@ const Settings: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {groups.map((group: Group) => (
-                        <div key={group.id} className="border rounded-lg p-4 shadow-sm">
-                            <h3 className="font-medium">{group.name}</h3>
+                        <div key={group.id} className="border rounded-lg p-4 shadow-sm relative">
+                            <div className="absolute top-2 right-2 flex gap-2">
+                                <Button
+                                    type="button"
+                                    onClick={() => handleDelete(group.id, 'group')}
+                                    variant="danger"
+                                    className="p-1 flex items-center justify-center"
+                                    title="Eliminar grupo"
+                                >
+                                    <DeleteIcon />
+                                </Button>
+                                <Button
+                                    type="button"
+                                    onClick={() => handleEdit(group)}
+                                    variant="primary"
+                                    className="p-1 flex items-center justify-center"
+                                    title="Editar grupo"
+                                >
+                                    <EditIcon />
+                                </Button>
+                            </div>
+                            <h3 className="font-medium pr-8">{group.name}</h3>
                             {group.description && (
                                 <p className="text-sm text-gray-600 mt-1">{group.description}</p>
                             )}
@@ -259,7 +316,7 @@ const Settings: React.FC = () => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <button className="text-primary-600 hover:text-primary-900 mr-4" onClick={() => navigate(`/clients/new/${user.id}`)}><EditIcon className="h-5 w-5" /></button>
-                                            <button className="text-red-600 hover:text-red-900" onClick={() => handleDelete(user.id)}><DeleteIcon className="h-5 w-5" /></button>
+                                            <button className="text-red-600 hover:text-red-900" onClick={() => handleDelete(user.id, 'staff')}><DeleteIcon className="h-5 w-5" /></button>
                                         </td>
 
                                     </tr>
