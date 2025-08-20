@@ -73,7 +73,7 @@ const NewWorkOrder: React.FC = () => {
             setFuelLevel(woData.fuel_level || '');
             setProblemDescription(woData.problem_description || '');
             setDiagnosis(woData.diagnostic_notes || '');
-            
+
             const { data: items, error: itemsError } = await workOrderItemService.getItems(woData.work_order_items_id!, selectedGroup.id);
             if (itemsError) throw itemsError;
             if (!items) return;
@@ -91,14 +91,14 @@ const NewWorkOrder: React.FC = () => {
                     setWorkOrderItemsId([...workOrderItemsId, item.work_order_id!]);
                 }
                 // Obtiene los productos
-                if (item.product_id) {
+                if (item.product_id && item.product_quantity && item.product_unit_price ) {
                     const { data: products, error: productError } = await productService.getById([item.product_id], selectedGroup.id);
                     if (productError) throw productError;
                     if (!products || products.length === 0) return;
                     const product = products[0]; // Tomamos el primer producto del array
 
                     const productItem: ProductItem = {
-                        id: item.work_order_id!,
+                        id: item.id!,
                         work_order_id: item.work_order_id!,
                         product_id: item.product_id,
                         product_quantity: Number(item.product_quantity),
@@ -157,7 +157,7 @@ const NewWorkOrder: React.FC = () => {
                 setAddedProducItems(updatedItems);
             } else {
                 setAddedProducItems([...addedProducItems, {
-                    id: product.id,
+                    product_id: product.id,
                     product_quantity: selectedProductQuantity,
                     product_unit_price: product.price,
                     product_name: product.name,
@@ -168,11 +168,23 @@ const NewWorkOrder: React.FC = () => {
         }
     };
 
-    const handleRemoveService = (id: string) => {
+    const handleRemoveService = async (id: string) => {
+        const { data, error } = await workOrderItemService.getServiceItems(id, workOrderItemsId[0], selectedGroup!.id)
+        if (error) throw error;
+        if (data) {
+            const { error } = await workOrderItemService.deleteItem(id, workOrderItemsId[0], selectedGroup!.id)
+            if (error) throw error;
+        }
         setAddedServices(addedServices.filter(s => s.id !== id));
     };
 
-    const handleRemoveItem = (productId: string) => {
+    const handleRemoveItem = async (productId: string) => {
+        const { data, error } = await workOrderItemService.getServiceItems(productId, workOrderItemsId[0], selectedGroup!.id)
+        if (error) throw error;
+        if (data) {
+            const { error } = await workOrderItemService.deleteItem(productId, workOrderItemsId[0], selectedGroup!.id)
+            if (error) throw error;
+        }
         setAddedProducItems(addedProducItems.filter((i: ProductItem) => i.id !== productId));
     };
 
@@ -227,38 +239,37 @@ const NewWorkOrder: React.FC = () => {
             // 3. Create the work order
             let workOrderId: string;
             if (id) {
-                workOrderId = id; // Use the existing ID when updating
+                workOrderId = id;
                 const { data: workOrder, error: workOrderError } = await workOrderService.update(workOrderId, selectedGroup.id, newWorkOrderData);
                 if (workOrderError) throw workOrderError;
                 if (!workOrder) throw new Error('No se pudo actualizar la orden de trabajo');
+                setWorkOrderItemsId([workOrder.work_order_items_id!]); // Use the existing ID when updating
             } else {
                 const { data: workOrder, error: workOrderError } = await workOrderService.create(newWorkOrderData, selectedGroup.id);
                 if (workOrderError) throw workOrderError;
                 if (!workOrder) throw new Error('No se pudo crear la orden de trabajo');
                 workOrderId = workOrder.id;
-            }
 
-            // 1. First, create the work order with a unique ID
-            if (!workOrderId) {
-                setWorkOrderItemsId(crypto.randomUUID());
+                // 1. First, create the work order with a unique ID
+                setWorkOrderItemsId([crypto.randomUUID()]);
             }
-            //const workOrderId = workOrder.id;
 
             // 4. Add services to the work order
             for (const service of addedServices) {
                 const serviceItem: WorkOrderItems = {
                     service_description: service.service_description,
                     service_price: service.service_price,
-                    work_order_id: id,
+                    work_order_id: workOrderItemsId[0],
                     product_id: null,
                     product_quantity: null,
                     product_unit_price: null
                 };
-                if (!workOrderItemsId) {
-                    const { error } = await workOrderItemService.addItem(serviceItem, selectedGroup.id);
+                if (id && service.id) {
+                    const { error } = await workOrderItemService.updateItem(service.id, selectedGroup.id, workOrderItemsId[0], serviceItem);
                     if (error) throw error;
-                } else {
-                    const { error } = await workOrderItemService.updateItem(serviceItem.id!, selectedGroup.id, workOrderItemsId, serviceItem);
+                }
+                else {
+                    const { error } = await workOrderItemService.addItem(serviceItem, selectedGroup.id);
                     if (error) throw error;
                 }
             }
@@ -269,25 +280,24 @@ const NewWorkOrder: React.FC = () => {
                     product_id: item.product_id,
                     product_quantity: item.product_quantity,
                     product_unit_price: item.product_unit_price,
-                    work_order_id: workOrderId,
+                    work_order_id: workOrderItemsId[0],
                     service_description: null,
                     service_price: null
                 };
-                if (!workOrderItemsId) {
-                    const { error } = await workOrderItemService.addItem(productItem, selectedGroup.id);
+                if (id && item.id) {
+                    const { error } = await workOrderItemService.updateItem(item.id, selectedGroup.id, workOrderItemsId[0], productItem);
                     if (error) throw error;
-                } else {
-                    const { error } = await workOrderItemService.updateItem(productItem.id!, selectedGroup.id, workOrderItemsId, productItem);
+                }
+                else {
+                    const { error } = await workOrderItemService.addItem(productItem, selectedGroup.id);
                     if (error) throw error;
                 }
             }
-
-            const { error } = await workOrderService.update(workOrderId, selectedGroup.id, { work_order_items_id: workOrderItemsId });
-            if (error) {
-                console.error('Error updating work order:', error);
-                throw new Error(`Error al actualizar la orden de trabajo: ${error.message}`);
+            if (id) {
+                const { error } = await workOrderService.update(workOrderId, selectedGroup.id, { work_order_items_id: workOrderItemsId[0] });
+                if (error) throw new Error(`Error al actualizar la orden de trabajo: ${error.message}`);
             }
-
+            
             // 6. Show success message and navigate
             alert('Orden de trabajo creada exitosamente');
             navigate('/work-orders');
@@ -418,8 +428,9 @@ const NewWorkOrder: React.FC = () => {
                                 </div>
                                 <Button type="submit" className="w-full h-fit">Agregar</Button>
                             </form>
-                            <ItemList items={addedServices} onRemove={handleRemoveService} headers={['Descripción', 'Precio']} renderRow={(service) => (
+                            <ItemList items={addedServices} onRemove={handleRemoveService} headers={['id', 'Descripción', 'Precio']} renderRow={(service) => (
                                 <>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{service.id}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{service.service_description}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${service.service_price}</td>
                                 </>

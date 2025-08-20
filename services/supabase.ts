@@ -854,6 +854,44 @@ export const workOrderItemService = {
       return handleError(error, "workOrderItemService.getItems");
     }
   },
+
+  getServiceItems: async (id: string, workOrderId: string, groupId: string) => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuario no autenticado");
+
+      const { data, error } = await supabase
+        .from("work_order_items")
+        .select("*")
+        .eq("id", id)
+        .eq("work_order_id", workOrderId)
+        .eq("group_id", groupId);
+      // .order("created_at", { ascending: true });
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      return handleError(error, "workOrderItemService.getServiceItems");
+    }
+  },
+
+  deleteItem: async (itemId: string, workOrderId: string, groupId: string) => {
+    try {
+      const { error } = await supabase
+        .from("work_order_items")
+        .delete()
+        .eq("id", itemId)
+        .eq("work_order_id", workOrderId)
+        .eq("group_id", groupId);
+
+      if (error) throw error;
+      return { data: { success: true }, error: null };
+    } catch (error) {
+      return handleError(error, "workOrderItemService.removeItem");
+    }
+  },
 };
 
 // Servicio para grupos
@@ -1147,29 +1185,32 @@ export const profileGroupService = {
   getProfilesGroupsRoleByIds: async (profileIds: string[], groupId: string) => {
     try {
       const { data, error } = await supabase
-        .from('profiles')
-        .select(`
+        .from("profiles")
+        .select(
+          `
           id,
           full_name,
           email,
           profile_groups!inner(
             role
           )
-        `)
-        .in('id', profileIds)
-        .in('profile_groups.profile_id', profileIds)
-        .eq('profile_groups.group_id', groupId);
+        `
+        )
+        .in("id", profileIds)
+        .in("profile_groups.profile_id", profileIds)
+        .eq("profile_groups.group_id", groupId);
 
       if (error) throw error;
-      
-      return { 
-        data: data?.map(profile => ({
-          id: profile.id,
-          email: profile.email,
-          full_name: profile.full_name,
-          role: profile.profile_groups[0].role
-        })) || [],
-        error: null 
+
+      return {
+        data:
+          data?.map((profile) => ({
+            id: profile.id,
+            email: profile.email,
+            full_name: profile.full_name,
+            role: profile.profile_groups[0].role,
+          })) || [],
+        error: null,
       };
     } catch (error) {
       handleError(error, "profileGroupService.getByIds");
@@ -1177,7 +1218,6 @@ export const profileGroupService = {
     }
   },
   create: async (profileGroupId: string, groupId: string, role: string) => {
-
     try {
       const { data, error } = await supabase
         .from("profile_groups")
@@ -1188,7 +1228,7 @@ export const profileGroupService = {
             role: role,
             is_admin: false,
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           },
         ])
         .select()
