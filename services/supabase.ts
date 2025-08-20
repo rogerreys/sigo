@@ -423,7 +423,7 @@ export const profileService = {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("*, roles(*), groups(*)")
+        .select("*")
         .eq("id", id)
         .single();
 
@@ -1190,6 +1190,22 @@ export const profileGroupService = {
       return { data: null, error };
     }
   },
+  getByIdaGroup: async (id: string, groupId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("profile_groups")
+        .select("*")
+        .eq("group_id", groupId)
+        .eq("profile_id", id)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;      
+      return { data, error: null };
+    } catch (error) {
+      handleError(error, "profileGroupService.getByGroup");
+      return { data: null, error };
+    }
+  },
   getProfilesGroupsRoleByIds: async (profileIds: string[], groupId: string) => {
     try {
       const { data, error } = await supabase
@@ -1247,6 +1263,42 @@ export const profileGroupService = {
     } catch (error) {
       handleError(error, "profileGroupService.create");
       return { data: null, error };
+    }
+  },
+  update: async (id: string, profileGroupId: string, groupId: string, role: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("profile_groups")
+        .update({
+          profile_id: profileGroupId,
+          group_id: groupId,
+          role: role,
+          is_admin: false,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      handleError(error, "profileGroupService.update");
+      return { data: null, error };
+    }
+  },
+  delete: async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("profile_groups")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      return { error: null };
+    } catch (error) {
+      handleError(error, "profileGroupService.delete");
+      return { error };
     }
   },
 };

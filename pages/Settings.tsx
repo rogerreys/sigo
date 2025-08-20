@@ -168,11 +168,16 @@ const Settings: React.FC = () => {
                 // Actualizar la lista de grupos después de eliminar
                 await Promise.all([fetchGroupsCreated(), fetchGroups()]);
             } else if (option === 'staff') {
-                // TODO
-                // const { error } = await userService.delete(id);
-                // if (error) throw error;
+                if (!selectedGroup) return;
+                // Obtenemos el id del profile_group
+                const { data, error } = await profileGroupService.getByIdaGroup(id, selectedGroup.id);
+                if (error) throw error;
+                if (!data) throw error;
+                const profileGroup = data[0];
+                 const { error: deleteError } = await profileGroupService.delete(profileGroup.id);
+                 if (deleteError) throw deleteError;
                 // Actualizar la lista de usuarios si es necesario
-                // await fetchUsers();
+                await Promise.all([fetchGroupsCreated(), fetchGroups()]);
             }
 
             await Swal.fire({
@@ -349,7 +354,7 @@ const Settings: React.FC = () => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <button className="text-primary-600 hover:text-primary-900 mr-4" onClick={() => navigate(`/clients/new/${user.id}`)}><EditIcon className="h-5 w-5" /></button>
+                                            <button className="text-primary-600 hover:text-primary-900 mr-4" onClick={() => navigate(`/settings/user/${user.id}`)}><EditIcon className="h-5 w-5" /></button>
                                             <button className="text-red-600 hover:text-red-900" onClick={() => handleDelete(user.id, 'staff')}><DeleteIcon className="h-5 w-5" /></button>
                                         </td>
 

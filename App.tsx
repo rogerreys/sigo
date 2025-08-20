@@ -44,6 +44,7 @@ const AppRoutes: React.FC = () => {
                 <Route path="work-orders/new/:id" element={<NewWorkOrder />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="settings/user" element={<NewUserForm />} />
+                <Route path="settings/user/:id" element={<NewUserForm />} />
                 <Route path="clients/new" element={<NewClient />} />
                 <Route path="clients/new/:id" element={<NewClient />} />
             </Route>

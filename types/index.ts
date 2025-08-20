@@ -119,3 +119,12 @@ export enum RoleService {
   gerente = "Gerente",
   personal = "Personal",
 }
+export interface ProfileGroup {
+  id: string;
+  profile_id: string;
+  group_id: string;
+  is_admin?: boolean;
+  role: string;
+  created_at: string;
+  updated_at: string;
+}

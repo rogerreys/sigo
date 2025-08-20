@@ -2,10 +2,11 @@ import React, { useState, useCallback } from 'react';
 import { profileService, roleService, groupsService, profileGroupService } from '../services/supabase';
 import Button from '../components/common/Button';
 import { InformationCircleIcon } from '../utils/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Database } from '../types/supabase';
 import GroupGuard from '../components/common/GroupGuard';
 import { useGroup } from '../components/common/GroupContext';
+import Swal from 'sweetalert2';
 
 interface NewUserFormProps {
   onSuccess?: () => void;
@@ -14,6 +15,7 @@ interface NewUserFormProps {
 
 const NewUserForm: React.FC<NewUserFormProps> = () => {
   interface FormData {
+    id: string;
     email: string;
     role: string;
     group: string;
@@ -23,6 +25,7 @@ const NewUserForm: React.FC<NewUserFormProps> = () => {
   }
 
   const [formData, setFormData] = useState<FormData>({
+    id: '',
     email: '',
     role: '',
     group: '',
@@ -39,29 +42,79 @@ const NewUserForm: React.FC<NewUserFormProps> = () => {
   const [existingRole, setExistingRole] = useState<string | null>(null);
   const navigate = useNavigate();
   const { selectedGroup } = useGroup();
+  // Parameter id
+  const { id } = useParams();
 
   const fetchGets = useCallback(async () => {
     if (!selectedGroup) return;
-    const [rolesRes, usersRes, groupsRes] = await Promise.all([
-      roleService.getAll(),
-      profileService.getAll(),
-      groupsService.getById([{ group_id: selectedGroup.id }])
-    ]);
-    if (rolesRes.error) throw rolesRes.error;
-    if (usersRes.error) throw usersRes.error;
-    if (groupsRes.error) throw groupsRes.error;
-    if (rolesRes.data) setRoles(rolesRes.data as { id: string; name: string }[]);
-    if (usersRes.data) setUsers(usersRes.data as Database['public']['Tables']['profiles']['Row'][]);
-    if (groupsRes.data) {
-      const group_unique: Database['public']['Tables']['groups']['Row'] = groupsRes.data[0];
-      setGroup(group_unique);
-    };
+    try {
+      const [rolesRes, usersRes, groupsRes] = await Promise.all([
+        roleService.getAll(),
+        profileService.getAll(),
+        groupsService.getById([{ group_id: selectedGroup.id }])
+      ]);
+      if (rolesRes.error) throw rolesRes.error;
+      if (usersRes.error) throw usersRes.error;
+      if (groupsRes.error) throw groupsRes.error;
+
+      if (rolesRes.data) setRoles(rolesRes.data as { id: string; name: string }[]);
+      if (usersRes.data) setUsers(usersRes.data as Database['public']['Tables']['profiles']['Row'][]);
+      if (groupsRes.data && groupsRes.data.length > 0) {
+        const group_unique: Database['public']['Tables']['groups']['Row'] = groupsRes.data[0];
+        setGroup(group_unique);
+      }
+    } catch (error) {
+      setError('Error al cargar los datos');
+      console.error('Error en fetchGets:', error);
+    }
   }, [selectedGroup]);
 
-  // Fetch roles on component mount
+  const fetchEdit = useCallback(async () => {
+    if (!id || !selectedGroup) return;
+
+    try {
+      setLoading(true);
+      const { data, error } = await profileGroupService.getByIdaGroup(id, selectedGroup.id);
+      if (error) throw error;
+      if (!data || !data.length) return;
+
+      const [profiles, groups] = await Promise.all([
+        profileService.getAll(),
+        groupsService.getById([{ group_id: selectedGroup.id }])
+      ]);
+
+      if (profiles.error) throw profiles.error;
+      if (groups.error) throw groups.error;
+      if (!profiles.data || !profiles.data.length) return;
+      if (!groups.data || !groups.data.length) return;
+
+      const profileGroup = data[0];
+      const user = profiles.data.find(u => u.id === profileGroup.profile_id);
+      
+      if (user) {
+        setFormData({
+          id: profileGroup.id,
+          email: user.email || '',
+          role: profileGroup.role || '',
+          group: groups.data[0].name || '',
+          profile_name: user.full_name || '',
+          profile_id: user.id,
+          full_name: user.full_name || ''
+        });
+      }
+    } catch (error) {
+      setError('Error al cargar los datos del usuario');
+      console.error('Error en fetchEdit:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [id, selectedGroup]);
+
+  // Fetch data on component mount and when selectedGroup changes
   React.useEffect(() => {
     fetchGets();
-  }, [fetchGets]);
+    fetchEdit();
+  }, [fetchGets, fetchEdit]);
 
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -104,6 +157,10 @@ const NewUserForm: React.FC<NewUserFormProps> = () => {
     }
 
     setFormData(updatedFormData);
+
+    if (name === 'profile_name') {
+      fetchEdit();
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -115,19 +172,39 @@ const NewUserForm: React.FC<NewUserFormProps> = () => {
       if (!selectedGroup) throw new Error('No se seleccionó un grupo');
       if (!formData.role) throw new Error('Por favor selecciona un rol');
       if (!formData.profile_id) throw new Error('Por favor selecciona un usuario');
-
-      const { error } = await profileGroupService.create(
-        formData.profile_id,
-        selectedGroup.id,
-        formData.role
-      );
-      if (error) throw error;
+      if (id) {
+        const { error } = await profileGroupService.update(
+          formData.id,
+          formData.profile_id,
+          selectedGroup.id,
+          formData.role
+        );
+        if (error) throw error;
+      } else {
+        const { error } = await profileGroupService.create(
+          formData.profile_id,
+          selectedGroup.id,
+          formData.role
+        );
+        if (error) throw error;
+      }
+      Swal.fire({
+        title: '¡Éxito!',
+        text: id ? 'Usuario actualizado exitosamente' : 'Usuario creado exitosamente',
+        icon: 'success',
+        confirmButtonText: 'Aceptar'
+      });
       // 8. Navigate to settings
       navigate('/settings');
 
     } catch (error: any) {
       console.error('Error creating user:', error);
-      setError(error.message || 'Error al crear el usuario. Por favor intenta de nuevo.');
+      Swal.fire({
+        title: '¡Error!',
+        text: error.message || 'Error al crear el usuario. Por favor intenta de nuevo.',
+        icon: 'error',
+        confirmButtonText: 'Aceptar'
+      });
     } finally {
       setLoading(false);
     }
@@ -157,8 +234,8 @@ const NewUserForm: React.FC<NewUserFormProps> = () => {
             </label>
             <div className="relative">
               <select
-                name="profile_name"
-                value={formData.profile_name || ''}
+                name="profile_id"
+                value={formData.profile_id || ''}
                 onChange={handleChange}
                 required
                 className={`w-full px-3 py-2 border ${existingRole ? 'border-yellow-400 bg-yellow-50' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
@@ -253,7 +330,7 @@ const NewUserForm: React.FC<NewUserFormProps> = () => {
               className="px-4 py-2"
               onClick={handleSubmit}
             >
-              {loading ? 'Creando...' : 'Crear Usuario'}
+              {id ? 'Actualizar' : 'Crear Usuario'}
             </Button>
           </div>
         </form>
