@@ -8,6 +8,7 @@ import { useParams } from 'react-router-dom';
 import GroupGuard from '@/components/common/GroupGuard';
 import { useGroup } from '../components/common/GroupContext';
 import { Product } from '../types';
+import Swal from 'sweetalert2';
 
 const NewProduct: React.FC = () => {
     const { id } = useParams();
@@ -37,25 +38,25 @@ const NewProduct: React.FC = () => {
             const { data, error } = await productService.getById([id], selectedGroup.id);
             if (error) throw error;
             if (!data || !data.length) return;
-            setFormData(data[0] as Product );
+            setFormData(data[0] as Product);
         };
         fetchProduct();
     }, [id]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target as HTMLInputElement;
-        
+
         setFormData(prev => {
             if (type === 'checkbox') {
                 return { ...prev, [name]: (e.target as HTMLInputElement).checked };
             }
-            
+
             // Convert numeric fields to numbers
             if (['price', 'cost', 'stock_quantity', 'min_stock_level'].includes(name)) {
                 const numValue = parseFloat(value) || 0;
                 return { ...prev, [name]: numValue };
             }
-            
+
             return { ...prev, [name]: value };
         });
     };
@@ -93,11 +94,23 @@ const NewProduct: React.FC = () => {
                 const { error } = await productService.create(productData, selectedGroup.id);
                 if (error) throw error;
             }
+            await Swal.fire({
+                title: "¡Éxito!",
+                text: `${id ? 'Actualizado' : 'Creado'} exitosamente`,
+                icon: "success",
+                confirmButtonText: 'Aceptar'
+            });
 
             navigate('/inventory');
         } catch (err) {
             console.error('Error creating product:', err);
             setError('Error al crear el producto. Por favor, intente de nuevo.');
+            await Swal.fire({
+                title: "¡Error!",
+                text: 'Error al crear el producto. Por favor, intente de nuevo.',
+                icon: "error",
+                confirmButtonText: 'Aceptar'
+            });
         } finally {
             setIsSubmitting(false);
         }
