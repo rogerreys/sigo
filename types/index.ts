@@ -22,7 +22,7 @@ export interface Client {
   address: string;
   createdAt: string;
 }
-
+/* Se comento por no estar completo
 export interface Product {
   id: string;
   name: string;
@@ -32,6 +32,23 @@ export interface Product {
   stock: number;
   minStock: number;
   barcode?: string;
+}*/
+
+export interface Product {
+  id?: string;
+  name: string;
+  description: string;
+  sku: string;
+  category: string;
+  price: number;
+  cost: number;
+  stock_quantity: number;
+  min_stock_level: number;
+  is_service: boolean;
+  group_id?: string;
+  user_id?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface ServiceItem {

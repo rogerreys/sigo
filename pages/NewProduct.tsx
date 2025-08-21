@@ -7,6 +7,7 @@ import { ArrowLeftIcon, InformationCircleIcon } from '../utils/icons';
 import { useParams } from 'react-router-dom';
 import GroupGuard from '@/components/common/GroupGuard';
 import { useGroup } from '../components/common/GroupContext';
+import { Product } from '../types';
 
 const NewProduct: React.FC = () => {
     const { id } = useParams();
@@ -14,15 +15,15 @@ const NewProduct: React.FC = () => {
     const { user } = useAuth();
     const { selectedGroup } = useGroup();
 
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<Omit<Product, 'id' | 'group_id' | 'user_id' | 'created_at' | 'updated_at'>>({
         name: '',
         description: '',
         sku: '',
         category: '',
-        price: '',
-        cost: '',
-        stock_quantity: '',
-        min_stock_level: '',
+        price: 0,
+        cost: 0,
+        stock_quantity: 0,
+        min_stock_level: 0,
         is_service: false
     });
 
@@ -30,23 +31,33 @@ const NewProduct: React.FC = () => {
     const [error, setError] = useState('');
 
     useEffect(() => {
-        if (id) {
-            const fetchProduct = async () => {
-                const { data, error } = await productService.getById(id);
-                if (error) throw error;
-                setFormData(data);
-            };
-            fetchProduct();
-        }
+        const fetchProduct = async () => {
+            if (!id) return;
+            if (!selectedGroup) return;
+            const { data, error } = await productService.getById([id], selectedGroup.id);
+            if (error) throw error;
+            if (!data || !data.length) return;
+            setFormData(data[0] as Product );
+        };
+        fetchProduct();
     }, [id]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target as HTMLInputElement;
-
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
-        }));
+        
+        setFormData(prev => {
+            if (type === 'checkbox') {
+                return { ...prev, [name]: (e.target as HTMLInputElement).checked };
+            }
+            
+            // Convert numeric fields to numbers
+            if (['price', 'cost', 'stock_quantity', 'min_stock_level'].includes(name)) {
+                const numValue = parseFloat(value) || 0;
+                return { ...prev, [name]: numValue };
+            }
+            
+            return { ...prev, [name]: value };
+        });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -61,18 +72,20 @@ const NewProduct: React.FC = () => {
             setIsSubmitting(true);
             setError('');
 
-            const productData = {
-                ...formData,
-                price: parseFloat(formData.price) || 0,
-                cost: formData.cost ? parseFloat(formData.cost) : null,
-                stock_quantity: formData.is_service ? null : parseInt(formData.stock_quantity) || 0,
-                min_stock_level: formData.is_service ? null : parseInt(formData.min_stock_level) || 0,
-                user_id: user.id
-            };
             if (!selectedGroup) {
                 setError('No hay un grupo seleccionado');
                 return;
             }
+
+            const productData = {
+                ...formData,
+                price: formData.price || 0,
+                cost: formData.cost || 0,
+                stock_quantity: formData.is_service ? null : formData.stock_quantity,
+                min_stock_level: formData.is_service ? null : formData.min_stock_level,
+                user_id: user.id,
+                group_id: selectedGroup.id
+            };
             if (id) {
                 const { error } = await productService.update(id, productData, selectedGroup.id);
                 if (error) throw error;
