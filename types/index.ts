@@ -122,15 +122,16 @@ export interface WorkOrders {
 }
 
 export interface Profiles {
-  id: number;
+  id: string;
   email: string;
-  full_name: string;
-  role: string;
-  created_at: string;
-  updated_at: string;
-  role_id: number;
-  user_id: number;
-  group_id: number;
+  full_name: string | null;
+  role: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  role_id: string | null;
+  user_id: string | null;
+  phone: string | null;
+  group_id?: string | null;
 }
 
 export enum WorkOrderStatus {

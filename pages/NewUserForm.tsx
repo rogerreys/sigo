@@ -7,6 +7,7 @@ import { Database } from '../types/supabase';
 import GroupGuard from '../components/common/GroupGuard';
 import { useGroup } from '../components/common/GroupContext';
 import Swal from 'sweetalert2';
+import { Profiles } from '../types';
 
 interface NewUserFormProps {
   onSuccess?: () => void;
@@ -34,7 +35,7 @@ const NewUserForm: React.FC<NewUserFormProps> = () => {
     full_name: ''
   });
   const [roles, setRoles] = useState<{ id: string; name: string }[]>([]);
-  const [users, setUsers] = useState<Database['public']['Tables']['profiles']['Row'][]>([]);
+  const [users, setUsers] = useState<Profiles[]>([]);
   const [group, setGroup] = useState<Database['public']['Tables']['groups']['Row'] | null>(null);
   const [loading, setLoading] = useState(false);
   // Removed unused state variable
@@ -58,7 +59,7 @@ const NewUserForm: React.FC<NewUserFormProps> = () => {
       if (groupsRes.error) throw groupsRes.error;
 
       if (rolesRes.data) setRoles(rolesRes.data as { id: string; name: string }[]);
-      if (usersRes.data) setUsers(usersRes.data as Database['public']['Tables']['profiles']['Row'][]);
+      if (usersRes.data) setUsers(usersRes.data as Profiles[]);
       if (groupsRes.data && groupsRes.data.length > 0) {
         const group_unique: Database['public']['Tables']['groups']['Row'] = groupsRes.data[0];
         setGroup(group_unique);
@@ -90,7 +91,7 @@ const NewUserForm: React.FC<NewUserFormProps> = () => {
 
       const profileGroup = data[0];
       const user = profiles.data.find(u => u.id === profileGroup.profile_id);
-      
+
       if (user) {
         setFormData({
           id: profileGroup.id,
@@ -124,9 +125,8 @@ const NewUserForm: React.FC<NewUserFormProps> = () => {
       ...formData,
       [name]: value
     };
-
     // If profile_name is being changed
-    if (name === 'profile_name' && value && selectedGroup) {
+    if ((name === 'profile_name' || name === 'profile_id') && value && selectedGroup) {
       try {
         const selectedUser = users.find(user => user.id === value);
         if (selectedUser) {
