@@ -7,6 +7,7 @@ import { productService } from '../services/supabase';
 import { useNavigate } from 'react-router-dom';
 import { useGroup } from '../components/common/GroupContext';
 import GroupGuard from '../components/common/GroupGuard';
+import Swal from 'sweetalert2';
 
 const Inventory: React.FC = () => {
     type Product = Database['public']['Tables']['products']['Row'];
@@ -47,14 +48,33 @@ const Inventory: React.FC = () => {
 
     const handleDelete = async (id: string) => {
         setLoading(true);
-        if (!selectedGroup) return;
-        const { error } = await productService.delete(id, selectedGroup.id);
-        if (error) {
-            console.error('Error deleting product:', error);
-        } else {
-            fetchProducts();
+        try {
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: 'Esta acción no se puede deshacer.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    if (!selectedGroup) return;
+                    const { error } = await productService.delete(id, selectedGroup.id);
+                    if (error) throw error;
+                    fetchProducts();
+                }
+            });
+        } catch (error) {
+            console.error(error);
+            Swal.fire({
+                title: 'Error',
+                text: 'Error deleting product',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
     return (
         <div>
