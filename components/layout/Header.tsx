@@ -61,7 +61,8 @@ const Header: React.FC = () => {
                   <select
                     value={selectedGroup?.id || ''}
                     onChange={handleGroupChange}
-                    className="block w-48 appearance-none bg-white border border-gray-200 hover:border-gray-300 px-4 py-2 pr-8 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 cursor-pointer"
+                    className={`block w-48 appearance-none bg-white border-2 ${!selectedGroup ? 'border-red-500 animate-pulse' : 'border-gray-200 hover:border-gray-300'} px-4 py-2 pr-8 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 cursor-pointer`}
+                    title={!selectedGroup ? 'Por favor selecciona un grupo' : ''}
                   >
                     <option value="" disabled>Seleccionar grupo</option>
                     {groups.map((group) => (
