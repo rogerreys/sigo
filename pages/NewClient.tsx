@@ -2,17 +2,30 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { clientService } from '../services/supabase';
 import Button from '../components/common/Button';
-import { Database } from '../types/supabase';
 import { useParams } from 'react-router-dom';
 import { useGroup } from '../components/common/GroupContext';
 import GroupGuard from '@/components/common/GroupGuard';
+import { Client } from '../types';
+import Swal from 'sweetalert2';
+
+const defaultClient: Client = {
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    state: '',
+    postal_code: '',
+    group_id: ''
+};
 
 const NewClient: React.FC = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [formData, setFormData] = useState<Database['public']['Tables']['clients']['Row']>({} as Database['public']['Tables']['clients']['Row']);
+    const [formData, setFormData] = useState<Client>({ ...defaultClient });
     const { selectedGroup } = useGroup();
 
     useEffect(() => {
@@ -20,13 +33,13 @@ const NewClient: React.FC = () => {
             const fetchClient = async () => {
                 const { data, error } = await clientService.getById(id);
                 if (error) throw error;
-                setFormData(data);
+                setFormData(data as Client);
             };
             fetchClient();
         }
     }, [id]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
@@ -41,14 +54,25 @@ const NewClient: React.FC = () => {
             if (id) {
                 const { error } = await clientService.update(id, formData, selectedGroup.id);
                 if (error) throw error;
-                navigate('/clients');
             } else {
                 const { error } = await clientService.create(formData, selectedGroup.id);
                 if (error) throw error;
-                navigate('/clients');
             }
+            await Swal.fire({
+                title: '¡Éxito!',
+                text: id ? 'Cliente actualizado exitosamente' : 'Cliente creado exitosamente',
+                icon: 'success',
+                confirmButtonText: 'Aceptar'
+            });
+            navigate('/clients');
         } catch (err: any) {
             setError(err.message || 'Error al crear el cliente');
+            await Swal.fire({
+                title: '¡Error!',
+                text: 'Error al crear el cliente. Por favor intenta de nuevo.',
+                icon: 'error',
+                confirmButtonText: 'Aceptar'
+            });
         } finally {
             setLoading(false);
         }

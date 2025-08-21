@@ -13,7 +13,7 @@ export interface Group {
   created_by: string | null;
   updated_at: string | null;
 }
-
+/*
 export interface Client {
   id: string;
   name: string;
@@ -21,6 +21,22 @@ export interface Client {
   phone: string;
   address: string;
   createdAt: string;
+}*/
+export interface Client {
+  id?: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  state: string;
+  postal_code: string;
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+  user_id?: string;
+  group_id: string;
 }
 /* Se comento por no estar completo
 export interface Product {

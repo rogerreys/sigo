@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { useGroup } from '../components/common/GroupContext';
 import { clientService } from '../services/supabase';
 import GroupGuard from '../components/common/GroupGuard';
+import Swal from 'sweetalert2';
 
 const Clients: React.FC = () => {
     const navigate = useNavigate();
@@ -40,6 +41,15 @@ const Clients: React.FC = () => {
 
     const handleDelete = async (id: string) => {
         try {
+            const { isConfirmed } = await Swal.fire({
+                title: '¿Estás seguro?',
+                text: 'Esta acción no se puede deshacer.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            });
+            if (!isConfirmed) return;
             if (!selectedGroup) return;
             await clientService.delete(id, selectedGroup.id);
             fetchClients();
@@ -96,10 +106,10 @@ const Clients: React.FC = () => {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{client.first_name + ' ' + client.last_name}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.email}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.phone}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(client.created_at).toLocaleDateString()}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(client.created_at!).toLocaleDateString()}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <button className="text-primary-600 hover:text-primary-900 mr-4" onClick={() => navigate(`/clients/new/${client.id}`)}><EditIcon className="h-5 w-5" /></button>
-                                            <button className="text-red-600 hover:text-red-900" onClick={() => handleDelete(client.id)}><DeleteIcon className="h-5 w-5" /></button>
+                                            <button className="text-red-600 hover:text-red-900" onClick={() => handleDelete(client.id!)}><DeleteIcon className="h-5 w-5" /></button>
                                         </td>
                                     </tr>
                                 ))}
