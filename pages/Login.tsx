@@ -47,7 +47,7 @@ const Login: React.FC = () => {
       }
 
       if (isLogin) {
-        navigate('/dashboard');
+        navigate('/stats');
       }
     } catch (err: any) {
       setError(err.message || 'Ocurrió un error. Por favor intente de nuevo.');

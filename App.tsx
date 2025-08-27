@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import MainLayout from './components/layout/MainLayout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import Stats from './pages/Stats';
 import Clients from './pages/Clients';
 import Inventory from './pages/Inventory';
 import WorkOrders from './pages/WorkOrders';
@@ -32,8 +33,9 @@ const AppRoutes: React.FC = () => {
         <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
-                <Route index element={<Navigate to="/dashboard" />} />
+                <Route index element={<Navigate to="/stats" />} />
                 <Route path="dashboard" element={<Dashboard />} />
+                <Route path="stats" element={<Stats />} />
                 <Route path="clients" element={<Clients />} />
                 <Route path="users" element={<Settings />} />
                 <Route path="inventory" element={<Inventory />} />
