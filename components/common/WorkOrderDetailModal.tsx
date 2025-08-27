@@ -6,6 +6,8 @@ import { MdWork } from "react-icons/md";
 import { workOrderItemService, productService, clientService } from '../../services/supabase';
 import { useGroup } from '../common/GroupContext';
 import Swal from 'sweetalert2';
+import { generateWorkOrderPDF } from '../../utils/pdfGenerator';
+import { DocumentPDF, LoadingSpinner } from '../../utils/icons';
 
 interface WorkOrderDetailModalProps {
     order: WorkOrders | null;
@@ -21,8 +23,9 @@ const WorkOrderDetailModal: React.FC<WorkOrderDetailModalProps> = ({ order, isOp
     const [productsItems, setProductsItems] = useState<Product[]>([]);
     const [isDisabledByStatus, setisDisabledByStatus] = useState(false);
     const { selectedGroup } = useGroup();
+    const [generatingPdfId, setGeneratingPdfId] = useState<string | null>(null);
 
-    const fetchWorkOrderItems = async () => {
+    const fetchWorkOrderItems = async (order: WorkOrders) => {
         if (!selectedGroup) return;
         try {
             const [workitems, products] = await Promise.all([
@@ -42,9 +45,28 @@ const WorkOrderDetailModal: React.FC<WorkOrderDetailModalProps> = ({ order, isOp
             if (order.status === WorkOrderStatus.Completed || order.status === WorkOrderStatus.Billed) {
                 setisDisabledByStatus(true);
             }
-            fetchWorkOrderItems();
+            fetchWorkOrderItems(order);
         }
     }, [order]);
+
+    const handleGeneratePdf = async (workOrder: WorkOrders) => {
+        setGeneratingPdfId(workOrder.id || '');
+        try {
+            // Give a moment for the UI to update to the loading state
+            await new Promise(resolve => setTimeout(resolve, 50));
+            generateWorkOrderPDF(workOrder, workOrderItems, productsItems, client_name, assignedTo);
+        } catch (error) {
+            console.error("Error generating PDF:", error);
+            Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: error as string || 'Error al generar el PDF',
+                confirmButtonText: 'Aceptar'
+            });
+        } finally {
+            setGeneratingPdfId(null);
+        }
+    };
 
     if (!isOpen || !editableOrder) return null;
 
@@ -187,15 +209,33 @@ const WorkOrderDetailModal: React.FC<WorkOrderDetailModalProps> = ({ order, isOp
                     </div>
                 </div>
 
-                <div className="flex justify-end items-center p-6 border-t border-gray-200 bg-gray-50 rounded-b-xl">
-                    <Button variant="secondary" onClick={onClose} className="mr-4" disabled={isLoading}>
-                        Cancelar
-                    </Button>
-                    {!isDisabledByStatus && (
-                        <Button onClick={handleSaveClick} isLoading={isLoading}>
-                            Guardar Cambios
+                <div className="flex justify-between items-center p-6 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+                    <div>
+                        <Button
+                            variant="ghost"
+                            onClick={() => handleGeneratePdf(editableOrder)}
+                            disabled={generatingPdfId === editableOrder.id}
+                            className="text-gray-500 hover:text-primary-600 disabled:opacity-50 disabled:cursor-wait rounded-md hover:bg-gray-100 transition-colors flex items-center gap-2"
+                            title="Generar PDF"
+                        >
+                            {generatingPdfId === editableOrder.id ? (
+                                <LoadingSpinner className="h-5 w-5" />
+                            ) : (
+                                <DocumentPDF className="h-5 w-5" />
+                            )}
+                            <span>Generar PDF</span>
                         </Button>
-                    )}
+                    </div>
+                    <div className="flex items-center">
+                        <Button variant="secondary" onClick={onClose} className="mr-4" disabled={isLoading}>
+                            Cancelar
+                        </Button>
+                        {!isDisabledByStatus && (
+                            <Button onClick={handleSaveClick} isLoading={isLoading}>
+                                Guardar Cambios
+                            </Button>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

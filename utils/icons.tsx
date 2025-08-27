@@ -3,7 +3,7 @@ import { LuLogOut } from "react-icons/lu";
 import { MdDashboard, MdPeople, MdInventory2, MdAssignment, MdSettings, MdOutlineDelete } from "react-icons/md";
 import { ImSpinner } from "react-icons/im";
 import { IoSearch, IoDocumentTextOutline } from "react-icons/io5";
-import { FaEdit, FaRegUser, FaChevronDown, FaRegUserCircle, FaPlus, FaArrowLeft, FaRegCheckCircle, FaRegClock, FaRegPauseCircle } from "react-icons/fa";
+import { FaEdit, FaRegUser, FaChevronDown, FaRegUserCircle, FaPlus, FaArrowLeft, FaRegCheckCircle, FaRegClock, FaRegPauseCircle, FaRegFilePdf } from "react-icons/fa";
 import { CgWorkAlt } from "react-icons/cg";
 import { GrCircleInformation } from "react-icons/gr";
 import { GoXCircle } from "react-icons/go";
@@ -107,4 +107,8 @@ export const LoadingSpinner: React.FC<IconProps> = ({ className }: IconProps) =>
 
 export const PlusIcon: React.FC<IconProps> = ({ className }: IconProps) => (
     <FaPlus className={className}/>
+);
+
+export const DocumentPDF: React.FC<IconProps> = ({ className }: IconProps) => (
+    <FaRegFilePdf className={className}/>
 );
