@@ -32,9 +32,9 @@ const AppRoutes: React.FC = () => {
     return (
         <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
                 <Route index element={<Navigate to="/stats" />} />
-                <Route path="dashboard" element={<Dashboard />} />
                 <Route path="stats" element={<Stats />} />
                 <Route path="clients" element={<Clients />} />
                 <Route path="users" element={<Settings />} />
@@ -50,7 +50,7 @@ const AppRoutes: React.FC = () => {
                 <Route path="clients/new" element={<NewClient />} />
                 <Route path="clients/new/:id" element={<NewClient />} />
             </Route>
-            <Route path="*" element={<Navigate to="/" />} />
+            <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
     );
 };
