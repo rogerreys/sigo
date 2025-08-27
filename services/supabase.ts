@@ -272,6 +272,20 @@ export const productService = {
       return handleError(error, "productService.getById");
     }
   },
+  // Obtener un producto por ID
+  getByGroupId: async (groupId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("group_id", groupId);
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      return handleError(error, "productService.getByGroupId");
+    }
+  },
 
   // Crear un nuevo producto
   create: async (
@@ -836,17 +850,11 @@ export const workOrderItemService = {
   // Obtener los ítems de una orden de trabajo
   getItems: async (workOrderId: string, groupId: string) => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuario no autenticado");
-
       const { data, error } = await supabase
         .from("work_order_items")
         .select("*")
         .eq("work_order_id", workOrderId)
         .eq("group_id", groupId);
-      // .order("created_at", { ascending: true });
 
       if (error) throw error;
       return { data, error: null };

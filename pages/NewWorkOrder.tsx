@@ -26,7 +26,7 @@ const NewWorkOrder: React.FC = () => {
     const [clients, setClients] = useState<Client[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [users, setUsers] = useState<Profiles[]>([]);
-    const [workOrderItemsId, setWorkOrderItemsId] = useState<string[]>([]);
+    //const [workOrderItemsId, setWorkOrderItemsId] = useState<string[]>([crypto.randomUUID()]);
     // Loading states
     const [loadingData, setLoadingData] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,6 +44,11 @@ const NewWorkOrder: React.FC = () => {
     const [addedServices, setAddedServices] = useState<ServiceItem[]>([]);
     const [addedProducItems, setAddedProducItems] = useState<(ProductItem)[]>([]);
 
+    const workOrderItemsId: string[] = [];
+    const servicesToAdd: ServiceItem[] = [];
+    const workOrderIds: string[] = [];
+    const productItemsToAdd: ProductItem[] = [];
+
     // State for adding new items/services
     const [newServiceDesc, setNewServiceDesc] = useState('');
     const [newServicePrice, setNewServicePrice] = useState('');
@@ -60,22 +65,28 @@ const NewWorkOrder: React.FC = () => {
     const fetchWorkOrder = async () => {
         if (id && selectedGroup) {
 
-            const { data: woData, error: woError } = await workOrderService.getById(id, selectedGroup.id);
-            if (woError) throw woError;
-            if (!woData) return;
+            const [woData, productsData] = await Promise.all([
+                workOrderService.getById(id, selectedGroup.id),
+                productService.getByGroupId(selectedGroup.id)
+            ]);
+            if (woData.error) throw woData.error;
+            if (!woData.data) return;
+            if (productsData.error) throw productsData.error;
+            if (!productsData.data) return;
+            setProducts(productsData.data as Product[]);
 
             /*setWorkOrder(woData as WorkOrders[]);*/
-            setSelectedClientId(woData.client_id);
-            setAssignedToId(woData.profile_id);
-            setVehicleYear(woData.vehicle_year?.toString() || '');
-            setVehicleMake(woData.vehicle_make || '');
-            setVehicleModel(woData.vehicle_model || '');
-            setVehicleMileage(woData.odometer_reading?.toString() || '');
-            setFuelLevel(woData.fuel_level || '');
-            setProblemDescription(woData.problem_description || '');
-            setDiagnosis(woData.diagnostic_notes || '');
+            setSelectedClientId(woData.data.client_id);
+            setAssignedToId(woData.data.profile_id);
+            setVehicleYear(woData.data.vehicle_year?.toString() || '');
+            setVehicleMake(woData.data.vehicle_make || '');
+            setVehicleModel(woData.data.vehicle_model || '');
+            setVehicleMileage(woData.data.odometer_reading?.toString() || '');
+            setFuelLevel(woData.data.fuel_level || '');
+            setProblemDescription(woData.data.problem_description || '');
+            setDiagnosis(woData.data.diagnostic_notes || '');
 
-            const { data: items, error: itemsError } = await workOrderItemService.getItems(woData.work_order_items_id!, selectedGroup.id);
+            const { data: items, error: itemsError } = await workOrderItemService.getItems(woData.data.work_order_items_id!, selectedGroup.id);
             if (itemsError) throw itemsError;
             if (!items) return;
             for (const item of items) {
@@ -87,17 +98,13 @@ const NewWorkOrder: React.FC = () => {
                         service_description: item.service_description,
                         service_price: Number(item.service_price)
                     };
-                    setAddedServices([serviceItem]);
-                    // Id products & services
-                    setWorkOrderItemsId([...workOrderItemsId, item.work_order_id!]);
+                    servicesToAdd.push(serviceItem);
+                    workOrderIds.push(item.work_order_id!);
                 }
                 // Obtiene los productos
-                if (item.product_id && item.product_quantity && item.product_unit_price ) {
-                    const { data: products, error: productError } = await productService.getById([item.product_id], selectedGroup.id);
-                    if (productError) throw productError;
-                    if (!products || products.length === 0) return;
-                    const product = products[0]; // Tomamos el primer producto del array
-
+                if (item.product_id && item.product_quantity && item.product_unit_price) {
+                    const product = productsData.data.find(p => p.id === item.product_id);
+                    if (!product) return;
                     const productItem: ProductItem = {
                         id: item.id!,
                         work_order_id: item.work_order_id!,
@@ -106,11 +113,17 @@ const NewWorkOrder: React.FC = () => {
                         product_unit_price: Number(item.product_unit_price),
                         product_name: product.name
                     };
-                    setAddedProducItems([...addedProducItems, productItem]);
-                    // Id products & services
-                    setWorkOrderItemsId([...workOrderItemsId, item.work_order_id!]);
+                    productItemsToAdd.push(productItem);
+                    workOrderIds.push(item.work_order_id!);
                 }
             }
+            if (servicesToAdd.length > 0) {
+                setAddedServices(servicesToAdd);
+            }
+            if (productItemsToAdd.length > 0) {
+                setAddedProducItems(productItemsToAdd);
+            }
+            workOrderItemsId.push(workOrderIds[0]);
         }
     };
 
@@ -244,15 +257,14 @@ const NewWorkOrder: React.FC = () => {
                 const { data: workOrder, error: workOrderError } = await workOrderService.update(workOrderId, selectedGroup.id, newWorkOrderData);
                 if (workOrderError) throw workOrderError;
                 if (!workOrder) throw new Error('No se pudo actualizar la orden de trabajo');
-                setWorkOrderItemsId([workOrder.work_order_items_id!]); // Use the existing ID when updating
+                workOrderItemsId.push(workOrder.work_order_items_id!); // Use the existing ID when updating
             } else {
                 const { data: workOrder, error: workOrderError } = await workOrderService.create(newWorkOrderData, selectedGroup.id);
                 if (workOrderError) throw workOrderError;
                 if (!workOrder) throw new Error('No se pudo crear la orden de trabajo');
                 workOrderId = workOrder.id;
-
                 // 1. First, create the work order with a unique ID
-                setWorkOrderItemsId([crypto.randomUUID()]);
+                workOrderItemsId.push(crypto.randomUUID());
             }
 
             // 4. Add services to the work order
@@ -294,17 +306,17 @@ const NewWorkOrder: React.FC = () => {
                     if (error) throw error;
                 }
             }
-            if (id) {
+            if(!id){
                 const { error } = await workOrderService.update(workOrderId, selectedGroup.id, { work_order_items_id: workOrderItemsId[0] });
                 if (error) throw new Error(`Error al actualizar la orden de trabajo: ${error.message}`);
             }
-            
+
             // 6. Show success message and navigate
             Swal.fire({
                 title: id ? "Orden de trabajo actualizada exitosamente" : "Orden de trabajo creada exitosamente",
                 icon: "success",
                 draggable: true
-              });
+            });
             navigate('/work-orders');
 
         } catch (error) {
@@ -313,7 +325,7 @@ const NewWorkOrder: React.FC = () => {
                 title: "Oops...",
                 text: `Error al crear la orden de trabajo: ${error instanceof Error ? error.message : 'Error desconocido'}`,
                 footer: '<a href="#">Why do I have this issue?</a>'
-              });
+            });
         } finally {
             setIsSubmitting(false);
         }
@@ -437,9 +449,8 @@ const NewWorkOrder: React.FC = () => {
                                 </div>
                                 <Button type="submit" className="w-full h-fit">Agregar</Button>
                             </form>
-                            <ItemList items={addedServices} onRemove={handleRemoveService} headers={['id', 'Descripción', 'Precio']} renderRow={(service) => (
+                            <ItemList items={addedServices} onRemove={handleRemoveService} headers={['Descripción', 'Precio']} renderRow={(service) => (
                                 <>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{service.id}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{service.service_description}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${service.service_price}</td>
                                 </>
@@ -462,9 +473,8 @@ const NewWorkOrder: React.FC = () => {
                                 </div>
                                 <Button type="submit" className="w-full h-fit">Agregar</Button>
                             </form>
-                            <ItemList items={addedProducItems} onRemove={handleRemoveItem} headers={['ID', 'Producto', 'Cant.', 'P. Unit.', 'Subtotal']} renderRow={(item) => (
+                            <ItemList items={addedProducItems} onRemove={handleRemoveItem} headers={['Producto', 'Cant.', 'P. Unit.', 'Subtotal']} renderRow={(item) => (
                                 <>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.id}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.product_name}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.product_quantity!}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.product_unit_price!.toFixed(2)}</td>
@@ -532,7 +542,7 @@ const ItemList = <T extends { id?: string; productId?: string }>({ items, onRemo
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                     {items.map((item) => (
-                        <tr key={item.id || item.productId}>
+                        <tr key={item.id || item.productId || 'service'}>
                             {renderRow(item)}
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <button onClick={() => onRemove(item.id || item.productId!)} className="text-red-500 hover:text-red-700">
