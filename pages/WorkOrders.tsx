@@ -23,6 +23,8 @@ const WorkOrders: React.FC = () => {
     const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrders | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
+    const [isDisabledByStatus, setisDisabledByStatus] = useState(false);
+
     const navigate = useNavigate();
 
     const fetchWorkOrders = useCallback(async () => {
@@ -142,9 +144,9 @@ const WorkOrders: React.FC = () => {
                 const { error } = await workOrderService.update(id, selectedGroup.id, updateData);
                 if (error) throw error;
             }
-            
+
             setWorkOrders(prevOrders =>
-                prevOrders.map(order => 
+                prevOrders.map(order =>
                     order.id === id ? { ...order, ...updateData } : order
                 )
             );
@@ -284,7 +286,8 @@ const WorkOrders: React.FC = () => {
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <div className="flex gap-2">
                                                 <Button variant="secondary" className="text-xs py-1 px-3" onClick={() => handleViewDetails(wo)}>Ver</Button>
-                                                <Button icon={<EditIcon/>} onClick={() => navigate(`/work-orders/new/${wo.id}`)}>Editar</Button>
+                                                {(wo.status !== WorkOrderStatus.Completed && wo.status !== WorkOrderStatus.Billed && wo.status !== WorkOrderStatus.Cancelled)
+                                                    && <Button icon={<EditIcon />} onClick={() => navigate(`/work-orders/new/${wo.id}`)}>Editar</Button>}
                                             </div>
                                         </td>
                                     </tr>
