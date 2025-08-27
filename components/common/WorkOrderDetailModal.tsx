@@ -3,8 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { WorkOrders, WorkOrderItems, Product, WorkOrderStatus, WorkOrderStatusFront } from '../../types';
 import Button from '../common/Button';
 import { MdWork } from "react-icons/md";
-import { workOrderItemService, productService } from '../../services/supabase';
+import { workOrderItemService, productService, clientService } from '../../services/supabase';
 import { useGroup } from '../common/GroupContext';
+import Swal from 'sweetalert2';
 
 interface WorkOrderDetailModalProps {
     order: WorkOrders | null;
@@ -20,7 +21,7 @@ const WorkOrderDetailModal: React.FC<WorkOrderDetailModalProps> = ({ order, isOp
     const [productsItems, setProductsItems] = useState<Product[]>([]);
     const [isDisabledByStatus, setisDisabledByStatus] = useState(false);
     const { selectedGroup } = useGroup();
-    
+
     const fetchWorkOrderItems = async () => {
         if (!selectedGroup) return;
         try {
