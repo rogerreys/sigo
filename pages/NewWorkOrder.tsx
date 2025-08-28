@@ -164,18 +164,34 @@ const NewWorkOrder: React.FC = () => {
         e.preventDefault();
         const product = products.find(p => p.id === selectedProductId);
         if (product && selectedProductQuantity > 0) {
-            const existingItemIndex = addedProducItems.findIndex(item => item.id === product.id);
+            // Generate a temporary unique ID for the new item
+            const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+            // Check if we already have this product in the list
+            const existingItemIndex = addedProducItems.findIndex(item =>
+                item.product_id === selectedProductId
+            );
+
             if (existingItemIndex > -1) {
+                // If product exists, update its quantity
                 const updatedItems = [...addedProducItems];
-                updatedItems[existingItemIndex].product_quantity += selectedProductQuantity;
+                updatedItems[existingItemIndex] = {
+                    ...updatedItems[existingItemIndex],
+                    product_quantity: updatedItems[existingItemIndex].product_quantity + selectedProductQuantity
+                };
                 setAddedProducItems(updatedItems);
             } else {
-                setAddedProducItems([...addedProducItems, {
-                    product_id: product.id,
-                    product_quantity: selectedProductQuantity,
-                    product_unit_price: product.price,
-                    product_name: product.name,
-                }]);
+                // If product doesn't exist, add it with a unique ID
+                setAddedProducItems(prevItems => [
+                    ...prevItems,
+                    {
+                        id: tempId,
+                        product_id: product.id,
+                        product_quantity: selectedProductQuantity,
+                        product_unit_price: product.price,
+                        product_name: product.name,
+                    }
+                ]);
             }
             setSelectedProductId('');
             setSelectedProductQuantity(1);
@@ -192,14 +208,23 @@ const NewWorkOrder: React.FC = () => {
         setAddedServices(addedServices.filter(s => s.id !== id));
     };
 
-    const handleRemoveItem = async (productId: string) => {
-        const { data, error } = await workOrderItemService.getServiceItems(productId, workOrderItemsId[0], selectedGroup!.id)
-        if (error) throw error;
-        if (data) {
-            const { error } = await workOrderItemService.deleteItem(productId, workOrderItemsId[0], selectedGroup!.id)
-            if (error) throw error;
+    const handleRemoveItem = async (id: string) => {
+        // If it's a temporary ID (starts with 'temp-'), just remove it from state
+        if (id.startsWith('temp-')) {
+            setAddedProducItems(prevItems => prevItems.filter(item => item.id !== id));
+            return;
         }
-        setAddedProducItems(addedProducItems.filter((i: ProductItem) => i.id !== productId));
+        try {
+            const { data, error } = await workOrderItemService.getServiceItems(id, workOrderItemsId[0], selectedGroup!.id)
+            if (error) throw error;
+            if (data) {
+                const { error } = await workOrderItemService.deleteItem(id, workOrderItemsId[0], selectedGroup!.id)
+                if (error) throw error;
+            }
+            setAddedProducItems(addedProducItems.filter((i: ProductItem) => i.id !== id));
+        } catch (error) {
+            console.error("Error removing item:", error);
+        }
     };
 
     const handleAssignToChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -306,7 +331,7 @@ const NewWorkOrder: React.FC = () => {
                     if (error) throw error;
                 }
             }
-            if(!id){
+            if (!id) {
                 const { error } = await workOrderService.update(workOrderId, selectedGroup.id, { work_order_items_id: workOrderItemsId[0] });
                 if (error) throw new Error(`Error al actualizar la orden de trabajo: ${error.message}`);
             }
