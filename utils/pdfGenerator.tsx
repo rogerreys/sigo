@@ -41,7 +41,7 @@ export const generateWorkOrderPDF = (workOrder: WorkOrders, workOrderItems: Work
     doc.text('Descripción del Trabajo:', 14, 95);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    const descriptionLines = doc.splitTextToSize(workOrder.problem_description, 180);
+    const descriptionLines = doc.splitTextToSize(`Descripcion: ${workOrder.problem_description}`, 180);
     doc.text(descriptionLines, 14, 102);
 
     let startY = 102 + (descriptionLines.length * 5) + 5;
@@ -81,16 +81,31 @@ export const generateWorkOrderPDF = (workOrder: WorkOrders, workOrderItems: Work
     }
 
 
-    // Total
-    const totalY = startY + 15 > 270 ? 20 : startY + 15; // check if new page is needed for total
+    // Total section
+    const totalY = startY + 15 > 270 ? 20 : startY + 15;
     if (totalY === 20) {
         doc.addPage();
     }
 
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`Total: $${workOrder.total?.toFixed(2) || '0.00'}`, 140, totalY, { align: 'left' });
+    const formatCurrency = (value: number | null | undefined) => (value || 0).toFixed(2);
+    const lineHeight = 8;
+    let currentY = totalY;
 
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+
+    // Subtotal
+    doc.text(`SubTotal: $${formatCurrency(workOrder.grand_total)}`, 140, currentY, { align: 'left' });
+    currentY += lineHeight;
+
+    // IVA
+    doc.text(`IVA (${workOrder.tax_rate * 100 || 0}%): $${formatCurrency(workOrder.grand_total && workOrder.tax_rate ?
+        (workOrder.grand_total * workOrder.tax_rate) : 0)}`, 140, currentY, { align: 'left' });
+    currentY += lineHeight;
+
+    // Total
+    doc.setFontSize(16);
+    doc.text(`Total: $${formatCurrency(workOrder.total)}`, 140, currentY, { align: 'left' });
 
     // Footer
     const pageCount = (doc as any).internal.getNumberOfPages();
