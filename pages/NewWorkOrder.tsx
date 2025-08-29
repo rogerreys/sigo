@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { WorkOrderStatus, WorkOrders, WorkOrderItems, Client, Product, Profiles, ServiceItem, ProductItem } from '../types';
+import { WorkOrderStatus, WorkOrders, WorkOrderItems, Client, Product, Profiles, ServiceItem, ProductItem, Configurations } from '../types';
 import Button from '../components/common/Button';
 import { XCircleIcon } from '../utils/icons';
-import { clientService, productService, userService, workOrderItemService, workOrderService } from '../services/supabase';
+import { clientService, productService, userService, workOrderItemService, workOrderService, configurationsService } from '../services/supabase';
 import { useGroup } from '../components/common/GroupContext';
 import GroupGuard from '../components/common/GroupGuard';
 import Swal from 'sweetalert2';
@@ -26,6 +26,7 @@ const NewWorkOrder: React.FC = () => {
     const [clients, setClients] = useState<Client[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [users, setUsers] = useState<Profiles[]>([]);
+    const [configurationsData, setConfigurationsData] = useState<Configurations[]>([]);
     // Work order items id (En actualizacion es necesaria guardarlo)
     const [workOrderItemsId, setWorkOrderItemsId] = useState<string[]>([crypto.randomUUID()]);
     // Loading states
@@ -71,14 +72,18 @@ const NewWorkOrder: React.FC = () => {
             const workOrderIds: string[] = [];
             const productItemsToAdd: ProductItem[] = [];
 
-            const [woData, productsData] = await Promise.all([
+            const [woData, productsData, configurationsData] = await Promise.all([
                 workOrderService.getById(id, selectedGroup.id),
-                productService.getByGroupId(selectedGroup.id)
+                productService.getByGroupId(selectedGroup.id),
+                configurationsService.getByGroupId(selectedGroup.id)
             ]);
             if (woData.error) throw woData.error;
             if (!woData.data) return;
             if (productsData.error) throw productsData.error;
             if (!productsData.data) return;
+            if (configurationsData.error) throw configurationsData.error;
+            if (!configurationsData.data) return;
+            setConfigurationsData(configurationsData.data as Configurations[]);
             setProducts(productsData.data as Product[]);
 
             /*setWorkOrder(woData as WorkOrders[]);*/
@@ -246,7 +251,7 @@ const NewWorkOrder: React.FC = () => {
         const servicesTotal = addedServices.reduce((acc, service) => acc + service.service_price, 0);
         const itemsTotal = addedProducItems.reduce((acc, item) => acc + (item.product_unit_price! * item.product_quantity!), 0);
         const subtotal = servicesTotal + itemsTotal;
-        const taxRate = 0.15; // Example 15% tax
+        const taxRate = Number(configurationsData.find(c => c.option_name === 'iva_value')?.option_value) || 0; // Example 15% tax
         const tax = subtotal * taxRate;
         const total = subtotal + tax;
         return { servicesTotal, itemsTotal, subtotal, tax, total, taxRate };

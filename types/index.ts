@@ -162,3 +162,13 @@ export interface ProfileGroup {
   created_at: string;
   updated_at: string;
 }
+export interface Configurations {
+  id: number;
+  group_id: string;
+  option_name: string;
+  option_value: string;
+  description: string;
+  data_type: string;
+  created_at: string;
+  updated_at: string;
+}
