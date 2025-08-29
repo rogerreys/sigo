@@ -26,7 +26,8 @@ const NewWorkOrder: React.FC = () => {
     const [clients, setClients] = useState<Client[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [users, setUsers] = useState<Profiles[]>([]);
-    //const [workOrderItemsId, setWorkOrderItemsId] = useState<string[]>([crypto.randomUUID()]);
+    // Work order items id (En actualizacion es necesaria guardarlo)
+    const [workOrderItemsId, setWorkOrderItemsId] = useState<string[]>([crypto.randomUUID()]);
     // Loading states
     const [loadingData, setLoadingData] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,11 +45,6 @@ const NewWorkOrder: React.FC = () => {
     const [addedServices, setAddedServices] = useState<ServiceItem[]>([]);
     const [addedProducItems, setAddedProducItems] = useState<(ProductItem)[]>([]);
 
-    const workOrderItemsId: string[] = [];
-    const servicesToAdd: ServiceItem[] = [];
-    const workOrderIds: string[] = [];
-    const productItemsToAdd: ProductItem[] = [];
-
     // State for adding new items/services
     const [newServiceDesc, setNewServiceDesc] = useState('');
     const [newServicePrice, setNewServicePrice] = useState('');
@@ -58,12 +54,22 @@ const NewWorkOrder: React.FC = () => {
     const { selectedGroup } = useGroup();
 
     useEffect(() => {
-        fetchWorkOrder();
-        fetchData();
-    }, [selectedGroup, id]);
+        const fetchInitialData = async () => {
+            // Cargamos los datos iniciales
+            const resp = await fetchData();
+            if (resp) {
+                // Cargamos la orden de trabajo
+                await fetchWorkOrder();
+            }
+        };
+        fetchInitialData();
+    }, [selectedGroup]);
 
     const fetchWorkOrder = async () => {
         if (id && selectedGroup) {
+            const servicesToAdd: ServiceItem[] = [];
+            const workOrderIds: string[] = [];
+            const productItemsToAdd: ProductItem[] = [];
 
             const [woData, productsData] = await Promise.all([
                 workOrderService.getById(id, selectedGroup.id),
@@ -123,7 +129,7 @@ const NewWorkOrder: React.FC = () => {
             if (productItemsToAdd.length > 0) {
                 setAddedProducItems(productItemsToAdd);
             }
-            workOrderItemsId.push(workOrderIds[0]);
+            setWorkOrderItemsId(workOrderIds);
         }
     };
 
@@ -139,12 +145,17 @@ const NewWorkOrder: React.FC = () => {
             if (clientsRes.data) setClients(clientsRes.data as Client[]);
             if (productsRes.data) setProducts(productsRes.data as Product[]);
             if (usersRes.data) setUsers(usersRes.data as Profiles[]);
+
+            return true;
         } catch (error) {
             console.error("Error fetching data for new work order:", error);
-        } finally {
+            return false;
+        }
+        finally {
             setLoadingData(false);
         }
     };
+
     const handleAddService = (e: React.FormEvent) => {
         e.preventDefault();
         if (newServiceDesc && newServicePrice) {
@@ -199,6 +210,7 @@ const NewWorkOrder: React.FC = () => {
     };
 
     const handleRemoveService = async (id: string) => {
+        console.log("id:",id, "workOrderItemsId:", workOrderItemsId);
         const { data, error } = await workOrderItemService.getServiceItems(id, workOrderItemsId[0], selectedGroup!.id)
         if (error) throw error;
         if (data) {
@@ -282,14 +294,16 @@ const NewWorkOrder: React.FC = () => {
                 const { data: workOrder, error: workOrderError } = await workOrderService.update(workOrderId, selectedGroup.id, newWorkOrderData);
                 if (workOrderError) throw workOrderError;
                 if (!workOrder) throw new Error('No se pudo actualizar la orden de trabajo');
-                workOrderItemsId.push(workOrder.work_order_items_id!); // Use the existing ID when updating
+                // workOrderItemsId.push(workOrder.work_order_items_id!); // Use the existing ID when updating
+                setWorkOrderItemsId([workOrder.work_order_items_id!]);
             } else {
                 const { data: workOrder, error: workOrderError } = await workOrderService.create(newWorkOrderData, selectedGroup.id);
                 if (workOrderError) throw workOrderError;
                 if (!workOrder) throw new Error('No se pudo crear la orden de trabajo');
                 workOrderId = workOrder.id;
                 // 1. First, create the work order with a unique ID
-                workOrderItemsId.push(crypto.randomUUID());
+                // TODO - Probar si toma el valor por defecto al crear la orden
+                //workOrderItemsId.push(crypto.randomUUID());
             }
 
             // 4. Add services to the work order
@@ -566,11 +580,11 @@ const ItemList = <T extends { id?: string; productId?: string }>({ items, onRemo
                     </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                    {items.map((item) => (
-                        <tr key={item.id || item.productId || 'service'}>
+                    {items.map((item, index) => (
+                        <tr key={item.id || `${item.id}-${index}`}>
                             {renderRow(item)}
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button onClick={() => onRemove(item.id || item.productId!)} className="text-red-500 hover:text-red-700">
+                                <button onClick={() => onRemove(item.id!)} className="text-red-500 hover:text-red-700">
                                     <XCircleIcon className="h-5 w-5" />
                                 </button>
                             </td>

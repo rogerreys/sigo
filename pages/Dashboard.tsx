@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaTools, FaUsers, FaClipboardCheck, FaBoxes, FaChartLine, FaDollarSign, FaFileInvoiceDollar, FaSearchDollar } from 'react-icons/fa';
+import { FaUsers, FaClipboardCheck, FaChartLine, FaFileInvoiceDollar } from 'react-icons/fa';
 import { MdOutlineSupportAgent, MdOutlineInventory } from 'react-icons/md';
 import { GiAutoRepair } from 'react-icons/gi';
 import { useNavigate } from 'react-router-dom';
