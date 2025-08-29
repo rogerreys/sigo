@@ -251,7 +251,7 @@ const NewWorkOrder: React.FC = () => {
         const servicesTotal = addedServices.reduce((acc, service) => acc + service.service_price, 0);
         const itemsTotal = addedProducItems.reduce((acc, item) => acc + (item.product_unit_price! * item.product_quantity!), 0);
         const subtotal = servicesTotal + itemsTotal;
-        const taxRate = Number(configurationsData.find(c => c.option_name === 'iva_value')?.option_value) || 0; // Example 15% tax
+        const taxRate = Number(configurationsData.find(c => c.option_name === 'iva_value')?.option_value)/100 || 0;
         const tax = subtotal * taxRate;
         const total = subtotal + tax;
         return { servicesTotal, itemsTotal, subtotal, tax, total, taxRate };

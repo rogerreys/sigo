@@ -9,6 +9,7 @@ import Modal from '../components/common/Modal';
 import Input from '../components/common/Input';
 import { useGroup } from '../components/common/GroupContext';
 import Swal from 'sweetalert2';
+import { EditConfigurationModal } from '../components/common/EditConfigurationModal';
 
 declare global {
     namespace JSX {
@@ -34,6 +35,8 @@ const Settings: React.FC = () => {
     });
     const [groups, setGroups] = useState<Group[]>([]);
     const [configurations, setConfigurations] = useState<Configurations[]>([]);
+    const [editingConfig, setEditingConfig] = useState<Configurations | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const fetchGroupsCreated = async () => {
         const { data, error } = await groupsService.getCreatedBy();
@@ -223,6 +226,39 @@ const Settings: React.FC = () => {
         }
     };
 
+    const handleUpdateConfig = async (id: number, data: Configurations) => {
+        try {
+            if (!selectedGroup) return;
+            const { error } = await configurationsService.update(id, selectedGroup.id, data);
+            if (error) throw error;
+            
+            // Update the local state
+            setConfigurations(configs => 
+                configs.map(config => 
+                    config.id === id 
+                        ? { ...config, option_value: data.option_value } 
+                        : config
+                )
+            );
+            
+            Swal.fire({
+                icon: 'success',
+                title: '¡Configuración actualizada!',
+                showConfirmButton: false,
+                timer: 1500
+            });
+        } catch (error) {
+            console.error('Error updating configuration:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudo actualizar la configuración',
+                confirmButtonText: 'Aceptar'
+            });
+            throw error; // Re-throw to handle in the modal
+        }
+    };
+
     return (
         <div className="container mx-auto p-4">
             <div className="flex justify-between items-center mb-6">
@@ -405,7 +441,10 @@ const Settings: React.FC = () => {
                                 <div className="col-span-2 flex justify-end space-x-2">
                                     <button 
                                         className="p-2 text-blue-600 hover:text-blue-800 rounded-full hover:bg-blue-50"
-                                        onClick={() => navigate(`/settings/configuration/${configuration.id}`)}
+                                        onClick={() => {
+                                            setEditingConfig(configuration);
+                                            setIsModalOpen(true);
+                                        }}
                                         title="Editar"
                                     >
                                         <EditIcon className="h-5 w-5" />
@@ -415,12 +454,23 @@ const Settings: React.FC = () => {
                         ))}
                         {configurations.length === 0 && (
                             <div className="px-6 py-8 text-center text-gray-500">
-                                No hay configuraciones disponibles. Crea tu primera configuración.
+                                No hay configuraciones disponibles.
                             </div>
                         )}
                     </div>
                 </div>
             </div>
+
+            {/* Edit Configuration Modal */}
+            <EditConfigurationModal
+                isOpen={isModalOpen}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setEditingConfig(null);
+                }}
+                configuration={editingConfig}
+                onSave={handleUpdateConfig}
+            />
         </div>
     );
 };

@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../types/supabase";
-import { WorkOrderItems } from "../types";
+import { Configurations, WorkOrderItems } from "../types";
 
 // Tipos para TypeScript
 type Tables = Database["public"]["Tables"];
@@ -1291,6 +1291,25 @@ export const configurationsService = {
       return { data, error: null };
     } catch (error) {
       return handleError(error, "configurationsService.getAll");
+    }
+  },
+  update: async (id: number, groupId: string, configuration: Configurations) => {
+    try {
+      const { data, error } = await supabase
+        .from("configurations")
+        .update({
+          option_value: configuration.option_value,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id)
+        .eq("group_id", groupId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      return handleError(error, "configurationsService.update");
     }
   },
 };
