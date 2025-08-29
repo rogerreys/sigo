@@ -210,7 +210,6 @@ const NewWorkOrder: React.FC = () => {
     };
 
     const handleRemoveService = async (id: string) => {
-        console.log("id:",id, "workOrderItemsId:", workOrderItemsId);
         const { data, error } = await workOrderItemService.getServiceItems(id, workOrderItemsId[0], selectedGroup!.id)
         if (error) throw error;
         if (data) {
@@ -316,7 +315,7 @@ const NewWorkOrder: React.FC = () => {
                     product_quantity: null,
                     product_unit_price: null
                 };
-                if (id && service.id) {
+                if (id && service.id && !service.id.startsWith('temp-')) {
                     const { error } = await workOrderItemService.updateItem(service.id, selectedGroup.id, workOrderItemsId[0], serviceItem);
                     if (error) throw error;
                 }
@@ -336,7 +335,7 @@ const NewWorkOrder: React.FC = () => {
                     service_description: null,
                     service_price: null
                 };
-                if (id && item.id) {
+                if (id && item.id && !item.id.startsWith('temp-')) { // .startsWith('temp-')
                     const { error } = await workOrderItemService.updateItem(item.id, selectedGroup.id, workOrderItemsId[0], productItem);
                     if (error) throw error;
                 }

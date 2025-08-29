@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../types/supabase";
-import { Group } from "@/types";
+import { WorkOrderItems } from "../types";
 
 // Tipos para TypeScript
 type Tables = Database["public"]["Tables"];
@@ -84,16 +84,10 @@ export const clientService = {
   // Obtener todos los clientes del usuario actual
   getAll: async (groupId: string) => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuario no autenticado");
-
       const { data, error } = await supabase
         .from("clients")
         .select("*")
-        .eq("group_id", groupId)
-        .order("last_name", { ascending: true });
+        .eq("group_id", groupId);
 
       if (error) throw error;
       return { data, error: null };
@@ -239,16 +233,10 @@ export const productService = {
   // Obtener todos los productos del usuario actual
   getAll: async (groupId: string) => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuario no autenticado");
-
       const { data, error } = await supabase
         .from("products")
         .select("*")
-        .eq("group_id", groupId)
-        .order("name", { ascending: true });
+        .eq("group_id", groupId);
 
       if (error) throw error;
       return { data, error: null };
@@ -747,7 +735,6 @@ export const workOrderService = {
 // Servicio para ítems de órdenes de trabajo
 export const workOrderItemService = {
   // Agregar un ítem a una orden de trabajo
-  // Agregar un ítem a una orden de trabajo
   addItem: async (
     itemData: Omit<
       Tables["work_order_items"]["Insert"],
@@ -756,6 +743,7 @@ export const workOrderItemService = {
     groupId: string
   ) => {
     try {
+      // Indica que usuario ingreso el producto
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -785,43 +773,15 @@ export const workOrderItemService = {
     itemId: string,
     group_id: string,
     work_order_id: string,
-    itemData: Partial<Tables["work_order_items"]["Update"]>
+    itemData: Partial<WorkOrderItems>
   ) => {
     try {
-      // Si se actualiza cantidad, precio o descuento, recalcular el total
-      if (
-        "quantity" in itemData ||
-        "unit_price" in itemData ||
-        "discount_percent" in itemData
-      ) {
-        // Obtener el ítem actual para calcular el nuevo total
-        const { data: currentItem, error: fetchError } = await supabase
-          .from("work_order_items")
-          .update(itemData)
-          .eq("id", itemId)
-          .eq("group_id", group_id)
-          .eq("work_order_id", work_order_id)
-          .single();
-
-        if (fetchError) throw fetchError;
-
-        // Usar los valores actualizados o los existentes con valores por defecto
-        const quantity = itemData.quantity ?? currentItem.quantity ?? 0;
-        const unitPrice = itemData.unit_price ?? currentItem.unit_price ?? 0;
-        const discountPercent =
-          itemData.discount_percent ?? currentItem.discount_percent ?? 0;
-
-        // Calcular nuevo total con valores por defecto seguros
-        const totalPrice = quantity * unitPrice * (1 - discountPercent / 100);
-
-        // Agregar el total calculado a los datos de actualización
-        itemData.total_price = totalPrice;
-      }
-
       const { data, error } = await supabase
         .from("work_order_items")
         .update(itemData)
         .eq("id", itemId)
+        .eq("group_id", group_id)
+        .eq("work_order_id", work_order_id)
         .select("*, products(*)")
         .single();
 
@@ -1044,14 +1004,18 @@ export const groupsService = {
   delete: async (id: string) => {
     try {
       // Solo el que creo el grupo puede eliminarlo
-      const { data: { user }, error: error_user } = await supabase.auth.getUser();
+      const {
+        data: { user },
+        error: error_user,
+      } = await supabase.auth.getUser();
       if (error_user) throw error_user;
       if (!user) throw new Error("Usuario no autenticado");
       // Eliminar el grupo por el usuario actual
-      const { error } = await supabase.from("groups")
-      .delete()
-      .eq("id", id)
-      .eq("created_by", user.id);
+      const { error } = await supabase
+        .from("groups")
+        .delete()
+        .eq("id", id)
+        .eq("created_by", user.id);
 
       if (error) throw error;
       return { error: null };
@@ -1207,7 +1171,7 @@ export const profileGroupService = {
         .eq("profile_id", id)
         .order("created_at", { ascending: true });
 
-      if (error) throw error;      
+      if (error) throw error;
       return { data, error: null };
     } catch (error) {
       handleError(error, "profileGroupService.getByGroup");
@@ -1273,7 +1237,12 @@ export const profileGroupService = {
       return { data: null, error };
     }
   },
-  update: async (id: string, profileGroupId: string, groupId: string, role: string) => {
+  update: async (
+    id: string,
+    profileGroupId: string,
+    groupId: string,
+    role: string
+  ) => {
     try {
       const { data, error } = await supabase
         .from("profile_groups")
