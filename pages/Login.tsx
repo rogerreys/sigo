@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import Button from '../components/common/Button';
 import { profileService } from '@/services/supabase';
 import { RoleService } from '@/types';
+import { FaHome } from 'react-icons/fa';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -13,6 +14,7 @@ const Login: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showHomeText, setShowHomeText] = useState(false);
   const { signIn, singUp, deleteUserById } = useAuth();
   const navigate = useNavigate();
 
@@ -57,10 +59,30 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+    <div className="flex items-center justify-center min-h-screen bg-gray-50 relative">
+      {/* Home Button */}
+      <div 
+        className="absolute top-4 left-4 flex items-center space-x-2 cursor-pointer"
+        onMouseEnter={() => setShowHomeText(true)}
+        onMouseLeave={() => setShowHomeText(false)}
+        onClick={() => navigate('/dashboard')}
+      >
+        {showHomeText && (
+          <span className="bg-white bg-opacity-80 text-gray-700 text-sm font-medium px-3 py-1 rounded-full transition-all duration-300">
+            Home
+          </span>
+        )}
+        <button 
+          className="p-2 rounded-full bg-white bg-opacity-80 hover:bg-opacity-100 transition-all duration-300 text-gray-700 shadow-md"
+          title="Volver al inicio"
+        >
+          <FaHome className="w-5 h-5" />
+        </button>
+      </div>
+      
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-lg">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">SIGO</h1>
+          <h1 className="text-3xl font-bold text-gray-900" onClick={() => navigate('/dashboard')}>SIGO</h1>
           <p className="mt-2 text-sm text-gray-600">
             {isLogin ? 'Bienvenido de nuevo' : 'Crea una nueva cuenta'}
           </p>

@@ -1,14 +1,35 @@
-import React from 'react';
-import { FaUsers, FaClipboardCheck, FaChartLine, FaFileInvoiceDollar } from 'react-icons/fa';
+import React, { useState } from 'react';
+import { FaUsers, FaClipboardCheck, FaChartLine, FaFileInvoiceDollar, FaUser } from 'react-icons/fa';
 import { MdOutlineSupportAgent, MdOutlineInventory } from 'react-icons/md';
 import { GiAutoRepair } from 'react-icons/gi';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard: React.FC = () => {
     const navigate = useNavigate();
+    const [isHovered, setIsHovered] = useState(false);
 
     return (
         <div className="min-h-screen bg-gray-50">
+            {/* Header with Login */}
+            <div className="absolute top-4 right-4">
+                <div className="flex items-center space-x-2">
+                    {isHovered && (
+                        <span className="bg-white bg-opacity-20 text-white text-sm font-medium px-3 py-1 rounded-full transition-all duration-300 transform translate-x-0 opacity-100">
+                            Iniciar sesión o registrarse
+                        </span>
+                    )}
+                    <button 
+                        onMouseEnter={() => setIsHovered(true)}
+                        onMouseLeave={() => setIsHovered(false)}
+                        onClick={() => navigate('/login')}
+                        className="p-2 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 transition-all duration-300 text-white flex-shrink-0"
+                        title="Iniciar sesión o registrarse"
+                    >
+                        <FaUser className="w-6 h-6" />
+                    </button>
+                </div>
+            </div>
+
             {/* Hero Section */}
             <div className="bg-gradient-to-r from-blue-700 to-blue-800 text-white">
                 <div className="max-w-7xl mx-auto py-24 px-4 sm:px-6 lg:px-8 text-center">
@@ -17,7 +38,7 @@ const Dashboard: React.FC = () => {
                         <span className="block text-blue-200">Sistema Integral de Gestión de Ventas y Servicios</span>
                     </h1>
                     <p className="mt-6 max-w-3xl mx-auto text-xl text-blue-100">
-                        Optimice su taller mecánico o negocio automotriz con nuestra solución todo en uno. Gestione clientes, inventario, órdenes de trabajo y facturación desde una sola plataforma.
+                        Optimice su negocio automotriz con nuestra solución todo en uno. Gestione clientes, inventario, órdenes de trabajo y facturación desde una sola plataforma.
                     </p>
                     <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4">
                         <button 
@@ -51,7 +72,7 @@ const Dashboard: React.FC = () => {
                             {
                                 icon: <FaUsers className="h-12 w-12 text-blue-600" />,
                                 title: 'Gestión de Clientes',
-                                description: 'Mantenga un registro completo de sus clientes, historial de servicios y vehículos. Envíe recordatorios de mantenimiento y ofertas personalizadas.'
+                                description: 'Mantenga un registro completo de sus clientes, historial de servicios y vehículos.'
                             },
                             {
                                 icon: <FaClipboardCheck className="h-12 w-12 text-blue-600" />,
@@ -66,12 +87,12 @@ const Dashboard: React.FC = () => {
                             {
                                 icon: <FaFileInvoiceDollar className="h-12 w-12 text-blue-600" />,
                                 title: 'Facturación Electrónica',
-                                description: 'Genere facturas electrónicas que cumplen con las regulaciones fiscales y envíelas directamente a sus clientes por correo electrónico.'
+                                description: 'Genere facturas electrónicas detallando los servicios y productos.'
                             },
                             {
                                 icon: <FaChartLine className="h-12 w-12 text-blue-600" />,
                                 title: 'Reportes Avanzados',
-                                description: 'Analice el rendimiento de su negocio con reportes detallados de ventas, servicios, rentabilidad y más.'
+                                description: 'Analice el rendimiento de su negocio con reportes detallados de ventas.'
                             },
                             {
                                 icon: <MdOutlineSupportAgent className="h-12 w-12 text-blue-600" />,
@@ -92,7 +113,7 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* Testimonials */}
-            <div className="bg-gray-50 py-16">
+            {/* <div className="bg-gray-50 py-16">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-12">
                         <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
@@ -136,7 +157,7 @@ const Dashboard: React.FC = () => {
                         ))}
                     </div>
                 </div>
-            </div>
+            </div> */}
 
             {/* CTA Section */}
             <div className="bg-blue-700">
@@ -148,7 +169,7 @@ const Dashboard: React.FC = () => {
                     <div className="mt-8 flex lg:mt-0 lg:flex-shrink-0">
                         <div className="inline-flex rounded-md shadow">
                             <button
-                                onClick={() => navigate('/signup')}
+                                onClick={() => navigate('/login')}
                                 className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-blue-600 bg-white hover:bg-blue-50"
                             >
                                 Comenzar Ahora
@@ -204,19 +225,19 @@ const Dashboard: React.FC = () => {
                                 <div>
                                     <h3 className="text-sm font-semibold text-gray-400 tracking-wider uppercase">Solución</h3>
                                     <ul className="mt-4 space-y-4">
-                                        <li><a href="/features" className="text-base text-gray-300 hover:text-white">Características</a></li>
-                                        <li><a href="/pricing" className="text-base text-gray-300 hover:text-white">Precios</a></li>
-                                        <li><a href="/integrations" className="text-base text-gray-300 hover:text-white">Integraciones</a></li>
-                                        <li><a href="/updates" className="text-base text-gray-300 hover:text-white">Actualizaciones</a></li>
+                                        <li><a href="/#" className="text-base text-gray-300 hover:text-white">Características</a></li>
+                                        <li><a href="/#" className="text-base text-gray-300 hover:text-white">Precios</a></li>
+                                        {/* <li><a href="/integrations" className="text-base text-gray-300 hover:text-white">Integraciones</a></li> */}
+                                        {/* <li><a href="/updates" className="text-base text-gray-300 hover:text-white">Actualizaciones</a></li> */}
                                     </ul>
                                 </div>
                                 <div className="mt-12 md:mt-0">
                                     <h3 className="text-sm font-semibold text-gray-400 tracking-wider uppercase">Soporte</h3>
                                     <ul className="mt-4 space-y-4">
-                                        <li><a href="/help-center" className="text-base text-gray-300 hover:text-white">Centro de Ayuda</a></li>
-                                        <li><a href="/tutorials" className="text-base text-gray-300 hover:text-white">Tutoriales</a></li>
-                                        <li><a href="/blog" className="text-base text-gray-300 hover:text-white">Blog</a></li>
-                                        <li><a href="/contact" className="text-base text-gray-300 hover:text-white">Contacto</a></li>
+                                        <li><a href="/#" className="text-base text-gray-300 hover:text-white">Centro de Ayuda</a></li>
+                                        <li><a href="/#" className="text-base text-gray-300 hover:text-white">Tutoriales</a></li>
+                                        {/* <li><a href="/blog" className="text-base text-gray-300 hover:text-white">Blog</a></li> */}
+                                        {/* <li><a href="/contact" className="text-base text-gray-300 hover:text-white">Contacto</a></li> */}
                                     </ul>
                                 </div>
                             </div>
@@ -225,16 +246,16 @@ const Dashboard: React.FC = () => {
                                     <h3 className="text-sm font-semibold text-gray-400 tracking-wider uppercase">Compañía</h3>
                                     <ul className="mt-4 space-y-4">
                                         <li><a href="/about" className="text-base text-gray-300 hover:text-white">Nosotros</a></li>
-                                        <li><a href="/careers" className="text-base text-gray-300 hover:text-white">Carreras</a></li>
-                                        <li><a href="/partners" className="text-base text-gray-300 hover:text-white">Socios</a></li>
+                                        {/* <li><a href="/careers" className="text-base text-gray-300 hover:text-white">Carreras</a></li> */}
+                                        {/* <li><a href="/partners" className="text-base text-gray-300 hover:text-white">Socios</a></li> */}
                                     </ul>
                                 </div>
                                 <div className="mt-12 md:mt-0">
                                     <h3 className="text-sm font-semibold text-gray-400 tracking-wider uppercase">Legal</h3>
                                     <ul className="mt-4 space-y-4">
-                                        <li><a href="/privacy" className="text-base text-gray-300 hover:text-white">Política de Privacidad</a></li>
-                                        <li><a href="/terms" className="text-base text-gray-300 hover:text-white">Términos de Servicio</a></li>
-                                        <li><a href="/security" className="text-base text-gray-300 hover:text-white">Seguridad</a></li>
+                                        <li><a href="/#" className="text-base text-gray-300 hover:text-white">Política de Privacidad</a></li>
+                                        <li><a href="/#" className="text-base text-gray-300 hover:text-white">Términos de Servicio</a></li>
+                                        <li><a href="/#" className="text-base text-gray-300 hover:text-white">Seguridad</a></li>
                                     </ul>
                                 </div>
                             </div>
