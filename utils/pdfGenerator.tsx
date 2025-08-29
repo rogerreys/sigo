@@ -98,7 +98,7 @@ export const generateWorkOrderPDF = (
         doc.setFontSize(fonts.small);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(colors.secondary);
-        doc.text('SIGVS - Sistema de Gestión de Ventas y Servicios', margins.left, currentY);
+        doc.text('SIGO - Sistema Integrado de Gestión de Operaciones', margins.left, currentY);
         
         currentY += 10;
         addLine(currentY);
@@ -348,7 +348,7 @@ export const generateWorkOrderPDF = (
             
             // Company info
             doc.text(
-                'SIGVS - Sistema de Gestión de Ventas y Servicios', 
+                'SIGO - Sistema Integrado de Gestión de Operaciones', 
                 margins.left, 
                 pageHeight - 10
             );

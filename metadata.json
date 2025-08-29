@@ -1,5 +1,5 @@
 {
-  "name": "SIGVS - Sistema de Gestión de Ventas y Servicios",
+  "name": "SIGO - Sistema Integrado de Gestión de Operaciones",
   "description": "Un sistema integral para optimizar y centralizar la gestión comercial, incluyendo clientes (CRM), órdenes de trabajo, inventario y facturación. Diseñado para mejorar la productividad y la toma de decisiones.",
   "requestFramePermissions": []
 }

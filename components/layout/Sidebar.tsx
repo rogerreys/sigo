@@ -25,7 +25,7 @@ const Sidebar: React.FC = () => {
     <div className="flex flex-col w-64 bg-sidebar text-white">
       <div className="flex items-center justify-center h-20 border-b border-gray-700">
         <h1 className="text-2xl font-bold text-white">
-          <NavLink to="/dashboard">SIGVS</NavLink>
+          <NavLink to="/dashboard">SIGO</NavLink>
           </h1>
       </div>
       <nav className="flex-1 px-4 py-4">

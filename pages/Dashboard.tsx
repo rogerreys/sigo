@@ -13,7 +13,7 @@ const Dashboard: React.FC = () => {
             <div className="bg-gradient-to-r from-blue-700 to-blue-800 text-white">
                 <div className="max-w-7xl mx-auto py-24 px-4 sm:px-6 lg:px-8 text-center">
                     <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl">
-                        <span className="block">SIGVS</span>
+                        <span className="block">SIGO</span>
                         <span className="block text-blue-200">Sistema Integral de Gestión de Ventas y Servicios</span>
                     </h1>
                     <p className="mt-6 max-w-3xl mx-auto text-xl text-blue-100">
@@ -40,7 +40,7 @@ const Dashboard: React.FC = () => {
             <div className="py-16 bg-white">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
-                        <h2 className="text-base text-blue-600 font-semibold tracking-wide uppercase">¿Por qué elegir SIGVS?</h2>
+                        <h2 className="text-base text-blue-600 font-semibold tracking-wide uppercase">¿Por qué elegir SIGO?</h2>
                         <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
                             La solución completa para su negocio automotriz
                         </p>
@@ -102,7 +102,7 @@ const Dashboard: React.FC = () => {
                     <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
                         {[
                             {
-                                quote: "Desde que implementamos SIGVS, hemos reducido el tiempo de facturación en un 40% y mejorado significativamente la satisfacción de nuestros clientes.",
+                                quote: "Desde que implementamos SIGO, hemos reducido el tiempo de facturación en un 40% y mejorado significativamente la satisfacción de nuestros clientes.",
                                 author: "Carlos Mendez",
                                 role: "Dueño, Taller Mecánico Rápido"
                             },
@@ -173,7 +173,7 @@ const Dashboard: React.FC = () => {
                         <div className="space-y-8 xl:col-span-1">
                             <div className="flex items-center">
                                 <GiAutoRepair className="h-10 w-10 text-blue-400 mr-3" />
-                                <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">SIGVS</span>
+                                <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">SIGO</span>
                             </div>
                             <p className="text-gray-300 text-base">
                                 Solución integral para la gestión de talleres mecánicos y negocios de servicios automotrices. Optimice sus operaciones y haga crecer su negocio con nuestras herramientas especializadas.
@@ -242,7 +242,7 @@ const Dashboard: React.FC = () => {
                     </div>
                     <div className="mt-12 pt-8 border-t border-gray-800">
                         <p className="text-base text-gray-400 text-center">
-                            &copy; {new Date().getFullYear()} SIGVS. Todos los derechos reservados.
+                            &copy; {new Date().getFullYear()} SIGO. Todos los derechos reservados.
                         </p>
                     </div>
                 </div>
