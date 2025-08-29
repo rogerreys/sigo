@@ -1279,3 +1279,18 @@ export const profileGroupService = {
     }
   },
 };
+
+export const configurationsService = {
+  getByGroupId: async (groupId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("configurations")
+        .select("*")
+        .eq("group_id", groupId);
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      return handleError(error, "configurationsService.getAll");
+    }
+  },
+};
