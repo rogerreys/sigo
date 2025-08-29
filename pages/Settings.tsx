@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect, FormEvent, useCallback } from 'react';
-import { userService, groupsService, profileGroupService } from '../services/supabase';
+import { userService, groupsService, profileGroupService, configurationsService } from '../services/supabase';
 import { Database } from '../types/supabase';
-import { Group } from '../types';
+import { Group, Configurations } from '../types';
 import Button from '../components/common/Button';
 import { PlusIcon, EditIcon, DeleteIcon } from '../utils/icons';
 import { useNavigate } from 'react-router-dom';
@@ -34,6 +33,7 @@ const Settings: React.FC = () => {
         description: ''
     });
     const [groups, setGroups] = useState<Group[]>([]);
+    const [configurations, setConfigurations] = useState<Configurations[]>([]);
 
     const fetchGroupsCreated = async () => {
         const { data, error } = await groupsService.getCreatedBy();
@@ -129,14 +129,24 @@ const Settings: React.FC = () => {
             if (error) throw error;
             if (!data) return;
 
-            const { data: profileGroups, error: profileGroupsError } = await profileGroupService.getProfilesGroupsRoleByIds(data.map((user: User) => user.id), selectedGroup.id);
-            if (profileGroupsError) throw profileGroupsError;
-            if (!profileGroups) throw profileGroups;
+            const [profileGroupsData, configurationsData] = await Promise.all([
+                profileGroupService.getProfilesGroupsRoleByIds(data.map((user: User) => user.id), selectedGroup.id),
+                configurationsService.getByGroupId(selectedGroup.id)    
+            ])
+            //const { data: profileGroups, error: profileGroupsError } = await profileGroupService.getProfilesGroupsRoleByIds(data.map((user: User) => user.id), selectedGroup.id);
+            if (profileGroupsData.error) throw profileGroupsData.error;
+            if (!profileGroupsData.data) throw profileGroupsData.error;
 
-            setUsers(profileGroups as User[]);
+            setUsers(profileGroupsData.data as User[]);
+            setConfigurations(configurationsData.data as Configurations[]);
         } catch (error) {
             console.error("Error fetching users:", error);
-            toast.error('Error al cargar los usuarios');
+            Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: error as string || 'Error al cargar los usuarios',
+                confirmButtonText: 'Aceptar'
+            });
         } finally {
             setLoading(false);
         }
@@ -147,7 +157,7 @@ const Settings: React.FC = () => {
         fetchGroupsCreated();
     }, [fetchUsers]);
 
-    const handleDelete = async (id: string, option: string) => {
+    const handleDelete = async (id: string | number, option: string) => {
         try {
             const result = await Swal.fire({
                 title: '¿Estás seguro?',
@@ -367,10 +377,49 @@ const Settings: React.FC = () => {
             </div>
 
             <div className="mt-8 bg-surface rounded-xl shadow-lg p-6">
-                <h2 className="text-xl font-semibold text-gray-700 mb-4 border-b pb-4">Otras Configuraciones</h2>
-                <p className="text-gray-600">
-                    Esta sección puede ser expandida para incluir configuraciones de facturación, integraciones, notificaciones y más.
-                </p>
+                <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
+                    <h2 className="text-xl font-semibold text-gray-800">Otras Configuraciones</h2>
+                </div>
+                
+                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                    <div className="grid grid-cols-12 bg-gray-50 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <div className="col-span-5">Opción</div>
+                        <div className="col-span-5">Valor</div>
+                        <div className="col-span-2 text-right">Acciones</div>
+                    </div>
+                    <div className="divide-y divide-gray-200">
+                        {configurations.map((configuration) => (
+                            <div key={configuration.id} className="grid grid-cols-12 items-center px-6 py-4 hover:bg-gray-50">
+                                <div className="col-span-5">
+                                    {configuration.description && (
+                                        <div className="text-sm font-medium text-gray-900">
+                                            {configuration.description}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="col-span-5">
+                                    <div className="text-sm text-gray-900">
+                                        {configuration.option_value}
+                                    </div>
+                                </div>
+                                <div className="col-span-2 flex justify-end space-x-2">
+                                    <button 
+                                        className="p-2 text-blue-600 hover:text-blue-800 rounded-full hover:bg-blue-50"
+                                        onClick={() => navigate(`/settings/configuration/${configuration.id}`)}
+                                        title="Editar"
+                                    >
+                                        <EditIcon className="h-5 w-5" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                        {configurations.length === 0 && (
+                            <div className="px-6 py-8 text-center text-gray-500">
+                                No hay configuraciones disponibles. Crea tu primera configuración.
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
     );
