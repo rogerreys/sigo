@@ -982,6 +982,11 @@ export const groupsService = {
   // Actualizar un grupo
   update: async (id: string, groupData: Partial<GroupUpdate>) => {
     try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuario no autenticado");
+
       const { data, error } = await supabase
         .from("groups")
         .update({
@@ -989,6 +994,7 @@ export const groupsService = {
           updated_at: new Date().toISOString(),
         })
         .eq("id", id)
+        .eq("created_by", user.id)
         .select()
         .single();
 

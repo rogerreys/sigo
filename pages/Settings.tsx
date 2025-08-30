@@ -83,8 +83,7 @@ const Settings: React.FC = () => {
             if (isEditing) {
                 const result = await groupsService.update(newGroup.id, {
                     name: newGroup.name.trim(),
-                    description: newGroup.description?.trim() || null,
-                    updated_at: new Date().toISOString()
+                    description: newGroup.description?.trim() || null
                 });
                 error = result.error;
             } else {
