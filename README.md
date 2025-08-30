@@ -113,4 +113,4 @@ npx supabase gen types typescript --project-id tu_project_id > types/supabase.ts
 
 ---
 
-Desarrollado por [Tu Empresa] - 2024
+Desarrollado por R_Reys - 2025
