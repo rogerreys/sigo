@@ -8,7 +8,6 @@ import { workOrderService, clientService, userService } from '../services/supaba
 import WorkOrderDetailModal from '../components/common/WorkOrderDetailModal';
 import { useGroup } from '../components/common/GroupContext';
 import Swal from 'sweetalert2';
-import { sendNotification } from '../components/common/NotificationEmail';
 
 const WorkOrders: React.FC = () => {
     const [workOrders, setWorkOrders] = useState<WorkOrders[]>([]);
@@ -141,7 +140,7 @@ const WorkOrders: React.FC = () => {
                 const completed_at = new Date().toISOString();
                 const { error } = await workOrderService.update(id, selectedGroup.id, { ...updateData, completed_at });
                 if (error) throw error;
-                sendNotification({ order: updatedOrder, assignedTo: users.find(u => u.id === selectedWorkOrder?.profile_id)?.full_name || '' });
+                //sendNotification({ order: updatedOrder, assignedTo: users.find(u => u.id === selectedWorkOrder?.profile_id)?.full_name || '' });
             } else {
                 const { error } = await workOrderService.update(id, selectedGroup.id, updateData);
                 if (error) throw error;

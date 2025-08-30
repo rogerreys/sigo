@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { WorkOrders, WorkOrderItems, Product, WorkOrderStatus, WorkOrderStatusFront } from '../../types';
 import Button from '../common/Button';
-import { MdWork } from "react-icons/md";
+import { MdWorkOrderIcon } from "../../utils/icons";
 import { workOrderItemService, productService, clientService } from '../../services/supabase';
 import { useGroup } from '../common/GroupContext';
 import Swal from 'sweetalert2';
@@ -113,7 +113,7 @@ const WorkOrderDetailModal: React.FC<WorkOrderDetailModalProps> = ({ order, isOp
                         Orden de Trabajo: <span className="text-primary-600">{editableOrder.id}</span>
                     </h2>
                     <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                        <MdWork className="h-6 w-6 text-gray-600" />
+                        <MdWorkOrderIcon className="h-6 w-6 text-gray-600" />
                     </button>
                 </div>
 
