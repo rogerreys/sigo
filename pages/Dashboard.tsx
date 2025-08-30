@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
-import { FaUsers, FaClipboardCheck, FaChartLine, FaFileInvoiceDollar, FaUser } from 'react-icons/fa';
-import { MdOutlineSupportAgent, MdOutlineInventory } from 'react-icons/md';
-import { GiAutoRepair } from 'react-icons/gi';
+import { FaUsersIcon, ClipboardCheckIcon, MdInventoryIcon, ChartLineIcon, FileInvoiceDollarIcon, UserIcon, SupportAgentIcon, AutoRepairIcon } from '../utils/icons';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard: React.FC = () => {
@@ -25,7 +23,7 @@ const Dashboard: React.FC = () => {
                         className="p-2 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 transition-all duration-300 text-white flex-shrink-0"
                         title="Iniciar sesión o registrarse"
                     >
-                        <FaUser className="w-6 h-6" />
+                        <UserIcon className="w-6 h-6" />
                     </button>
                 </div>
             </div>
@@ -70,32 +68,32 @@ const Dashboard: React.FC = () => {
                     <div className="grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-3">
                         {[
                             {
-                                icon: <FaUsers className="h-12 w-12 text-blue-600" />,
+                                icon: <FaUsersIcon className="h-12 w-12 text-blue-600" />,
                                 title: 'Gestión de Clientes',
                                 description: 'Mantenga un registro completo de sus clientes, historial de servicios y vehículos.'
                             },
                             {
-                                icon: <FaClipboardCheck className="h-12 w-12 text-blue-600" />,
+                                icon: <ClipboardCheckIcon className="h-12 w-12 text-blue-600" />,
                                 title: 'Órdenes de Trabajo',
                                 description: 'Cree y gestione órdenes de trabajo de forma eficiente, con seguimiento en tiempo real del estado de cada reparación y servicio.'
                             },
                             {
-                                icon: <MdOutlineInventory className="h-12 w-12 text-blue-600" />,
+                                icon: <MdInventoryIcon className="h-12 w-12 text-blue-600" />,
                                 title: 'Control de Inventario',
                                 description: 'Gestione su inventario con alertas de stock bajo, seguimiento de proveedores y control de precios de manera sencilla.'
                             },
                             {
-                                icon: <FaFileInvoiceDollar className="h-12 w-12 text-blue-600" />,
+                                icon: <FileInvoiceDollarIcon className="h-12 w-12 text-blue-600" />,
                                 title: 'Facturación Electrónica',
                                 description: 'Genere facturas electrónicas detallando los servicios y productos.'
                             },
                             {
-                                icon: <FaChartLine className="h-12 w-12 text-blue-600" />,
+                                icon: <ChartLineIcon className="h-12 w-12 text-blue-600" />,
                                 title: 'Reportes Avanzados',
                                 description: 'Analice el rendimiento de su negocio con reportes detallados de ventas.'
                             },
                             {
-                                icon: <MdOutlineSupportAgent className="h-12 w-12 text-blue-600" />,
+                                icon: <SupportAgentIcon className="h-12 w-12 text-blue-600" />,
                                 title: 'Soporte Personalizado',
                                 description: 'Nuestro equipo de soporte está listo para ayudarle en cada paso del camino, con capacitación y asistencia continua.'
                             }
@@ -193,7 +191,7 @@ const Dashboard: React.FC = () => {
                     <div className="xl:grid xl:grid-cols-3 xl:gap-8">
                         <div className="space-y-8 xl:col-span-1">
                             <div className="flex items-center">
-                                <GiAutoRepair className="h-10 w-10 text-blue-400 mr-3" />
+                                <AutoRepairIcon className="h-10 w-10 text-blue-400 mr-3" />
                                 <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">SIGO</span>
                             </div>
                             <p className="text-gray-300 text-base">

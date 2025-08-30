@@ -3,7 +3,7 @@ import { LuLogOut } from "react-icons/lu";
 import { MdDashboard, MdPeople, MdInventory2, MdAssignment, MdSettings, MdOutlineDelete } from "react-icons/md";
 import { ImSpinner } from "react-icons/im";
 import { IoSearch, IoDocumentTextOutline } from "react-icons/io5";
-import { FaEdit, FaRegUser, FaChevronDown, FaRegUserCircle, FaPlus, FaArrowLeft, FaRegCheckCircle, FaRegClock, FaRegPauseCircle, FaRegFilePdf } from "react-icons/fa";
+import { FaHome, FaEdit, FaRegUser, FaChevronDown, FaRegUserCircle, FaPlus, FaArrowLeft, FaRegCheckCircle, FaRegClock, FaRegPauseCircle, FaRegFilePdf } from "react-icons/fa";
 import { CgWorkAlt } from "react-icons/cg";
 import { GrCircleInformation } from "react-icons/gr";
 import { GoXCircle } from "react-icons/go";
@@ -11,9 +11,45 @@ import { CiFilter } from "react-icons/ci";
 import { IoIosStats } from "react-icons/io";
 import { MdWork } from "react-icons/md";
 
+import { FaUsers, FaClipboardCheck, FaChartLine, FaFileInvoiceDollar, FaUser } from 'react-icons/fa';
+import { MdOutlineSupportAgent, MdOutlineInventory } from 'react-icons/md';
+import { GiAutoRepair } from 'react-icons/gi';
+
 type IconProps = {
     className?: string;
 };
+
+export const FaUsersIcon: React.FC<IconProps> = ({ className }: IconProps) => (
+    <FaUsers className={className} />
+);
+
+export const ClipboardCheckIcon: React.FC<IconProps> = ({ className }: IconProps) => (
+    <FaClipboardCheck className={className} />
+);
+
+export const ChartLineIcon: React.FC<IconProps> = ({ className }: IconProps) => (
+    <FaChartLine className={className} />
+);
+
+export const FileInvoiceDollarIcon: React.FC<IconProps> = ({ className }: IconProps) => (
+    <FaFileInvoiceDollar className={className} />
+);
+
+export const UserIcon: React.FC<IconProps> = ({ className }: IconProps) => (
+    <FaUser className={className} />
+);
+
+export const SupportAgentIcon: React.FC<IconProps> = ({ className }: IconProps) => (
+    <MdOutlineSupportAgent className={className} />
+);
+
+export const MdInventoryIcon: React.FC<IconProps> = ({ className }: IconProps) => (
+    <MdOutlineInventory className={className} />
+);
+
+export const AutoRepairIcon: React.FC<IconProps> = ({ className }: IconProps) => (
+    <GiAutoRepair className={className} />
+);
 
 export const StatsIcon: React.FC<IconProps> = ({ className }: IconProps) => (
     <IoIosStats className={className} />
@@ -116,4 +152,8 @@ export const DocumentPDF: React.FC<IconProps> = ({ className }: IconProps) => (
 
 export const MdWorkOrderIcon: React.FC<IconProps> = ({ className }: IconProps) => (
     <MdWork className={className} />
+);
+
+export const HomeIcon: React.FC<IconProps> = ({ className }: IconProps) => (
+    <FaHome className={className} />
 );

@@ -465,9 +465,11 @@ export const profileService = {
     >
   ) => {
     try {
-      const { data, error } = await supabase.from("profiles").insert({
-        ...profileData,
-      });
+      const { data, error } = await supabase
+        .from("profiles")
+        .insert({ ...profileData })
+        .select()
+        .single();
 
       if (error) throw error;
       return { data, error: null };
@@ -1299,7 +1301,11 @@ export const configurationsService = {
       return handleError(error, "configurationsService.getAll");
     }
   },
-  update: async (id: number, groupId: string, configuration: Configurations) => {
+  update: async (
+    id: number,
+    groupId: string,
+    configuration: Configurations
+  ) => {
     try {
       const { data, error } = await supabase
         .from("configurations")
