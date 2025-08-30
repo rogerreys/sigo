@@ -3,7 +3,7 @@ import { LuLogOut } from "react-icons/lu";
 import { MdDashboard, MdPeople, MdInventory2, MdAssignment, MdSettings, MdOutlineDelete } from "react-icons/md";
 import { ImSpinner } from "react-icons/im";
 import { IoSearch, IoDocumentTextOutline } from "react-icons/io5";
-import { FaHome, FaEdit, FaRegUser, FaChevronDown, FaRegUserCircle, FaPlus, FaArrowLeft, FaRegCheckCircle, FaRegClock, FaRegPauseCircle, FaRegFilePdf } from "react-icons/fa";
+import { FaHome, FaEdit, FaRegUser, FaChevronDown, FaRegUserCircle, FaPlus, FaArrowLeft, FaRegCheckCircle, FaRegClock, FaRegPauseCircle, FaRegFilePdf, FaBars, FaTimes } from "react-icons/fa";
 import { CgWorkAlt } from "react-icons/cg";
 import { GrCircleInformation } from "react-icons/gr";
 import { GoXCircle } from "react-icons/go";
@@ -156,4 +156,12 @@ export const MdWorkOrderIcon: React.FC<IconProps> = ({ className }: IconProps) =
 
 export const HomeIcon: React.FC<IconProps> = ({ className }: IconProps) => (
     <FaHome className={className} />
+);
+
+export const MenuIcon: React.FC<IconProps> = ({ className }: IconProps) => (
+    <FaBars className={className} />
+);
+
+export const CloseIcon: React.FC<IconProps> = ({ className }: IconProps) => (
+    <FaTimes className={className} />
 );
