@@ -14,11 +14,12 @@ type GroupInsert = Database["public"]["Tables"]["groups"]["Insert"];
 type GroupUpdate = Database["public"]["Tables"]["groups"]["Update"];
 
 // Configuración de Supabase
-const supabaseUrl =
-  process.env.PUBLIC_SUPABASE_URL || "https://acwppojhvjykdalquhhd.supabase.co";
-const supabaseAnonKey =
-  process.env.PUBLIC_SUPABASE_ANON_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjd3Bwb2podmp5a2RhbHF1aGhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwODE3OTMsImV4cCI6MjA2NDY1Nzc5M30.qsLT0hgW4vHje_UkWk1Yh8jL4zID4mb3tmp1GqttSwM";
+const supabaseUrl = process.env.PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables. Please check your .env file.');
+}
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
