@@ -1,7 +1,7 @@
 -- Crear tabla de configurations
 CREATE TABLE configurations (
     id SERIAL PRIMARY KEY,
-    option_name VARCHAR(255) NOT NULL UNIQUE,
+    option_name VARCHAR(255) NOT NULL,
     option_value TEXT,
     description TEXT,
     data_type VARCHAR(50) DEFAULT 'string',
@@ -60,3 +60,68 @@ INSERT INTO configurations (option_name, option_value, description, data_type, g
 --     description = EXCLUDED.description,
 --     data_type = EXCLUDED.data_type,
 --     updated_at = CURRENT_TIMESTAMP;
+
+
+-- TRIGGER
+-- Crear función que se ejecutará cuando se inserte un nuevo grupo
+CREATE OR REPLACE FUNCTION insert_default_configurations()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Insertar configuración de IVA
+    INSERT INTO configurations (
+        option_name, 
+        option_value, 
+        description, 
+        data_type, 
+        group_id,
+        created_at,
+        updated_at
+    ) VALUES (
+        'iva_value',
+        '15',
+        'Valor del iva del país',
+        'integer',
+        NEW.id,
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+    );
+    
+    -- Insertar configuración de notificaciones
+    INSERT INTO configurations (
+        option_name, 
+        option_value, 
+        description, 
+        data_type, 
+        group_id,
+        created_at,
+        updated_at
+    ) VALUES (
+        'enable_notifications',
+        'false',
+        'Habilitar notificaciones',
+        'boolean',
+        NEW.id,
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+    );
+    
+    -- Retornar el registro NEW para que el INSERT original continúe
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Crear el trigger que se ejecuta DESPUÉS de insertar en groups
+CREATE TRIGGER trigger_insert_default_configurations
+    AFTER INSERT ON groups
+    FOR EACH ROW
+    EXECUTE FUNCTION insert_default_configurations();
+
+-- Ejemplo de uso: insertar un nuevo grupo
+-- INSERT INTO groups (name, description, created_by) 
+-- VALUES ('Ventas', 'Configuraciones del módulo de ventas', 'admin');
+
+-- Verificar que se crearon las configuraciones automáticamente
+-- SELECT g.name as group_name, c.option_name, c.option_value, c.description 
+-- FROM groups g 
+-- INNER JOIN configurations c ON g.id = c.group_id 
+-- ORDER BY g.name, c.option_name;
