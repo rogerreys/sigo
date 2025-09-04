@@ -3,7 +3,7 @@ import { LuLogOut } from "react-icons/lu";
 import { MdDashboard, MdPeople, MdInventory2, MdAssignment, MdSettings, MdOutlineDelete } from "react-icons/md";
 import { ImSpinner } from "react-icons/im";
 import { IoSearch, IoDocumentTextOutline } from "react-icons/io5";
-import { FaHome, FaEdit, FaRegUser, FaChevronDown, FaRegUserCircle, FaPlus, FaArrowLeft, FaRegCheckCircle, FaRegClock, FaRegPauseCircle, FaRegFilePdf, FaBars, FaTimes } from "react-icons/fa";
+import { FaHome, FaEdit, FaRegUser, FaChevronDown, FaRegUserCircle, FaPlus, FaArrowLeft, FaRegCheckCircle, FaRegClock, FaRegPauseCircle, FaRegFilePdf, FaBars, FaTimes, FaRegEnvelope, FaPhone, FaMapPin } from "react-icons/fa";
 import { CgWorkAlt } from "react-icons/cg";
 import { GrCircleInformation } from "react-icons/gr";
 import { GoXCircle } from "react-icons/go";
@@ -164,4 +164,16 @@ export const MenuIcon: React.FC<IconProps> = ({ className }: IconProps) => (
 
 export const CloseIcon: React.FC<IconProps> = ({ className }: IconProps) => (
     <FaTimes className={className} />
+);
+
+export const MailIcon: React.FC<IconProps> = ({ className }: IconProps) => (
+    <FaRegEnvelope className={className} />
+);
+
+export const PhoneIcon: React.FC<IconProps> = ({ className }: IconProps) => (
+    <FaPhone className={className} />
+);
+
+export const MapPinIcon: React.FC<IconProps> = ({ className }: IconProps) => (
+    <FaMapPin className={className} />
 );

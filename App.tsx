@@ -15,6 +15,7 @@ import NewUserForm from './pages/NewUserForm';
 import NewClient from './pages/NewClient';
 import NewProduct from './pages/NewProduct';
 import { GroupProvider } from './components/common/GroupContext';
+import Contact from './pages/Contact';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -33,6 +34,7 @@ const AppRoutes: React.FC = () => {
         <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="contact" element={<Contact />} />
             <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
                 <Route index element={<Navigate to="/stats" />} />
                 <Route path="stats" element={<Stats />} />
