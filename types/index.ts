@@ -9,6 +9,7 @@ export interface Group {
   id: string;
   name: string;
   description: string | null;
+  image_url?: string | null;
   created_at: string | null;
   created_by: string | null;
   updated_at: string | null;

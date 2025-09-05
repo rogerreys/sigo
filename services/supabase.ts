@@ -18,7 +18,9 @@ const supabaseUrl = process.env.PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.PUBLIC_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables. Please check your .env file.');
+  throw new Error(
+    "Missing Supabase environment variables. Please check your .env file."
+  );
 }
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
@@ -1118,6 +1120,33 @@ export const groupsService = {
     } catch (error) {
       console.error("Error checking group admin status:", error);
       return { isAdmin: false, error };
+    }
+  },
+
+  storageLoadImg: async (file: File, filePath: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from("group-avatars")
+        .upload(filePath, file);
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error("Error fetching group avatars:", error);
+      return { data: null, error };
+    }
+  },
+
+  storageGetPublicUrl: async (filePath: string) =>{
+    try {
+      const { data } = await supabase.storage
+        .from("group-avatars")
+        .getPublicUrl(filePath);
+
+      return { data, error: null };
+    } catch (error) {
+      console.error("Error fetching group avatars:", error);
+      return { data: null, error };
     }
   },
 };

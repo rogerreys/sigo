@@ -46,3 +46,10 @@ USING (
     AND p.role = 'admin'
   )
 );
+
+-- LOAD IMG AVATAR BUCKET
+-- Con valor por defecto
+ALTER TABLE groups 
+ADD COLUMN image_url TEXT DEFAULT NULL;
+-- Opcional: Agregar un comentario descriptivo a la columna
+COMMENT ON COLUMN groups.image_url IS 'URL de la imagen/avatar del grupo';

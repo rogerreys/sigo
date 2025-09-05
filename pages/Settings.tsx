@@ -31,7 +31,9 @@ const Settings: React.FC = () => {
     const [newGroup, setNewGroup] = useState({
         id: '',
         name: '',
-        description: ''
+        description: '',
+        imageFile: null as File | null,
+        imagePreview: ''
     });
     const [groups, setGroups] = useState<Group[]>([]);
     const [configurations, setConfigurations] = useState<Configurations[]>([]);
@@ -79,17 +81,28 @@ const Settings: React.FC = () => {
 
         try {
             let error;
-            
+            let imageUrl = null;
+
+            // Subir imagen si existe
+            if (newGroup.imageFile) {
+                const uploadedImageUrl = await uploadImage(newGroup.imageFile, newGroup.id || 'temp');
+                if (uploadedImageUrl) {
+                    imageUrl = uploadedImageUrl;
+                }
+            }
+
             if (isEditing) {
                 const result = await groupsService.update(newGroup.id, {
                     name: newGroup.name.trim(),
-                    description: newGroup.description?.trim() || null
+                    description: newGroup.description?.trim() || null,
+                    image_url: imageUrl || undefined
                 });
                 error = result.error;
             } else {
                 const result = await groupsService.create({
                     name: newGroup.name.trim(),
-                    description: newGroup.description?.trim() || null
+                    description: newGroup.description?.trim() || null,
+                    image_url: imageUrl || null
                 });
                 error = result.error;
             }
@@ -98,27 +111,86 @@ const Settings: React.FC = () => {
 
             await loadingSwal.close();
 
-            await Swal.fire({
+            Swal.fire({
+                icon: "success",
                 title: "¡Éxito!",
                 text: successMessage,
-                icon: "success",
-                confirmButtonText: 'Aceptar'
+                timer: 2000,
+                showConfirmButton: false
             });
 
             setShowGroupModal(false);
-            setNewGroup({ id: '', name: '', description: '' });
-            await Promise.all([fetchGroupsCreated(), fetchGroups()]);
-
-        } catch (error: any) {
+            setNewGroup({ id: '', name: '', description: '', imageFile: null, imagePreview: '' });
+            fetchGroupsCreated();
+        } catch (error) {
             console.error('Error:', error);
             await loadingSwal.close();
 
             Swal.fire({
                 icon: "error",
                 title: "Error",
-                text: error.message || errorMessage,
-                confirmButtonText: 'Aceptar'
+                text: errorMessage,
+                footer: error instanceof Error ? error.message : ''
             });
+        }
+    };
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+
+            // Validar tipo de archivo
+            if (!file.type.match('image.*')) {
+                Swal.fire({
+                    icon: "error",
+                    title: "Formato no soportado",
+                    text: "Por favor, sube una imagen válida (JPEG, PNG, etc.)"
+                });
+                return;
+            }
+
+            // Validar tamaño (máximo 1MB)
+            if (file.size > 1 * 1024 * 1024) {
+                Swal.fire({
+                    icon: "error",
+                    title: "Archivo demasiado grande",
+                    text: "La imagen no debe superar los 1MB"
+                });
+                return;
+            }
+
+            // Crear vista previa
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setNewGroup(prev => ({
+                    ...prev,
+                    imageFile: file,
+                    imagePreview: reader.result as string
+                }));
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const uploadImage = async (file: File, groupId: string): Promise<string | null> => {
+        try {
+            // Crear un nombre único para el archivo
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${groupId}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+            const filePath = `group-avatars/${fileName}`;
+
+            // Subir el archivo a Supabase Storage
+            const { error: uploadError } = await groupsService.storageLoadImg(file, filePath);
+
+            if (uploadError) throw uploadError;
+
+            // Obtener la URL pública
+            const { data } = await groupsService.storageGetPublicUrl(filePath);
+            if (!data) throw new Error('Error al obtener la URL pública');
+            return data.publicUrl;
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            return null;
         }
     };
 
@@ -133,7 +205,7 @@ const Settings: React.FC = () => {
 
             const [profileGroupsData, configurationsData] = await Promise.all([
                 profileGroupService.getProfilesGroupsRoleByIds(data.map((user: User) => user.id), selectedGroup.id),
-                configurationsService.getByGroupId(selectedGroup.id)    
+                configurationsService.getByGroupId(selectedGroup.id)
             ])
             //const { data: profileGroups, error: profileGroupsError } = await profileGroupService.getProfilesGroupsRoleByIds(data.map((user: User) => user.id), selectedGroup.id);
             if (profileGroupsData.error) throw profileGroupsData.error;
@@ -186,8 +258,8 @@ const Settings: React.FC = () => {
                 if (error) throw error;
                 if (!data) throw error;
                 const profileGroup = data[0];
-                 const { error: deleteError } = await profileGroupService.delete(profileGroup.id);
-                 if (deleteError) throw deleteError;
+                const { error: deleteError } = await profileGroupService.delete(profileGroup.id);
+                if (deleteError) throw deleteError;
                 // Actualizar la lista de usuarios si es necesario
                 await Promise.all([fetchGroupsCreated(), fetchGroups()]);
             }
@@ -212,8 +284,8 @@ const Settings: React.FC = () => {
     const handleEdit = async (group: Group) => {
         try {
             setShowGroupModal(true);
-            setNewGroup({ id: group.id, name: group.name, description: group.description || '' });
-            
+            setNewGroup({ id: group.id, name: group.name, description: group.description || '', imagePreview: group.image_url || '' });
+
         } catch (error) {
             console.error('Error editing group:', error);
             await Swal.fire({
@@ -230,16 +302,16 @@ const Settings: React.FC = () => {
             if (!selectedGroup) return;
             const { error } = await configurationsService.update(id, selectedGroup.id, data);
             if (error) throw error;
-            
+
             // Update the local state
-            setConfigurations(configs => 
-                configs.map(config => 
-                    config.id === id 
-                        ? { ...config, option_value: data.option_value } 
+            setConfigurations(configs =>
+                configs.map(config =>
+                    config.id === id
+                        ? { ...config, option_value: data.option_value }
                         : config
                 )
             );
-            
+
             Swal.fire({
                 icon: 'success',
                 title: '¡Configuración actualizada!',
@@ -280,33 +352,50 @@ const Settings: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {groups.map((group: Group) => (
-                        <div className="border rounded-lg p-4 shadow-sm relative">
-                            <div className="absolute top-2 right-2 flex gap-2">
-                                <Button
-                                    type="button"
-                                    onClick={() => handleDelete(group.id, 'group')}
-                                    variant="danger"
-                                    className="p-1 flex items-center justify-center"
-                                    title="Eliminar grupo"
-                                >
-                                    <DeleteIcon />
-                                </Button>
-                                <Button
-                                    type="button"
-                                    onClick={() => handleEdit(group)}
-                                    variant="primary"
-                                    className="p-1 flex items-center justify-center"
-                                    title="Editar grupo"
-                                >
-                                    <EditIcon />
-                                </Button>
-                            </div>
-                            <h3 className="font-medium pr-8">{group.name}</h3>
-                            {group.description && (
-                                <p className="text-sm text-gray-600 mt-1">{group.description}</p>
-                            )}
-                            <div className="text-xs text-gray-500 mt-2">
-                                Creado: {new Date(group.created_at || '').toLocaleDateString()}
+                        <div key={group.id} className="bg-white p-4 rounded-lg shadow border border-gray-200 hover:shadow-md transition-shadow">
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center space-x-3">
+                                    {group.image_url ? (
+                                        <img
+                                            src={group.image_url}
+                                            alt={group.name}
+                                            className="h-12 w-12 rounded-full object-cover border-2 border-gray-200"
+                                        />
+                                    ) : (
+                                        <div className="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
+                                            {group.name.charAt(0).toUpperCase()}
+                                        </div>
+                                    )}
+                                    <div>
+                                        <h3 className="font-medium">{group.name}</h3>
+                                        {group.description && (
+                                            <p className="text-sm text-gray-600 mt-1">{group.description}</p>
+                                        )}
+                                        <div className="text-xs text-gray-500 mt-2">
+                                            Creado: {new Date(group.created_at || '').toLocaleDateString()}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex space-x-1">
+                                    <Button
+                                        type="button"
+                                        onClick={() => handleEdit(group)}
+                                        variant="primary"
+                                        className="p-1 flex items-center justify-center"
+                                        title="Editar grupo"
+                                    >
+                                        <EditIcon />
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        onClick={() => handleDelete(group.id, 'group')}
+                                        variant="danger"
+                                        className="p-1 flex items-center justify-center"
+                                        title="Eliminar grupo"
+                                    >
+                                        <DeleteIcon />
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     ))}
@@ -318,7 +407,7 @@ const Settings: React.FC = () => {
                 isOpen={showGroupModal}
                 onClose={() => {
                     setShowGroupModal(false);
-                    setNewGroup({ id: '', name: '', description: '' });
+                    setNewGroup({ id: '', name: '', description: '', imageFile: null, imagePreview: '' });
                 }}
                 title={newGroup.id ? "Editar Grupo" : "Nuevo Grupo"}
             >
@@ -345,6 +434,56 @@ const Settings: React.FC = () => {
                             rows={3}
                             placeholder="Descripción del grupo"
                         />
+                    </div>
+                    <div className="mt-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Imagen del Grupo (opcional)
+                        </label>
+                        <div className="mt-1 flex items-center">
+                            <label
+                                htmlFor="group-image"
+                                className="cursor-pointer bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                            >
+                                Seleccionar Imagen
+                            </label>
+                            <input
+                                id="group-image"
+                                name="group-image"
+                                type="file"
+                                accept="image/*"
+                                className="sr-only"
+                                onChange={handleImageChange}
+                            />
+                            {newGroup.imagePreview ? (
+                                <div className="ml-4 relative group">
+                                    <img
+                                        src={newGroup.imagePreview}
+                                        alt="Vista previa"
+                                        className="h-12 w-12 rounded-full object-cover"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setNewGroup(prev => ({ ...prev, imageFile: null, imagePreview: '' }));
+                                        }}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title="Eliminar imagen"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            ) : (
+                                <span className="ml-4 text-sm text-gray-500">
+                                    {newGroup.imageFile ? newGroup.imageFile.name : 'Ninguna imagen seleccionada'}
+                                </span>
+                            )}
+                        </div>
+                        <p className="mt-1 text-xs text-gray-500">
+                            Tamaño máximo: 5MB. Formatos: JPG, PNG, GIF.
+                        </p>
                     </div>
                     <div className="flex justify-end space-x-3 mt-6">
                         <Button
@@ -415,7 +554,7 @@ const Settings: React.FC = () => {
                 <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
                     <h2 className="text-xl font-semibold text-gray-800">Otras Configuraciones</h2>
                 </div>
-                
+
                 <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                     <div className="grid grid-cols-12 bg-gray-50 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         <div className="col-span-5">Opción</div>
@@ -438,7 +577,7 @@ const Settings: React.FC = () => {
                                     </div>
                                 </div>
                                 <div className="col-span-2 flex justify-end space-x-2">
-                                    <button 
+                                    <button
                                         className="p-2 text-blue-600 hover:text-blue-800 rounded-full hover:bg-blue-50"
                                         onClick={() => {
                                             setEditingConfig(configuration);
