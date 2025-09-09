@@ -85,7 +85,7 @@ const Settings: React.FC = () => {
 
             // Subir imagen si existe
             if (newGroup.imageFile) {
-                const uploadedImageUrl = await uploadImage(newGroup.imageFile, newGroup.id || 'temp');
+                const uploadedImageUrl = await uploadImage(newGroup.imageFile, newGroup.name.trim(), isEditing);
                 if (uploadedImageUrl) {
                     imageUrl = uploadedImageUrl;
                 }
@@ -172,17 +172,24 @@ const Settings: React.FC = () => {
         }
     };
 
-    const uploadImage = async (file: File, groupId: string): Promise<string | null> => {
+    const uploadImage = async (file: File, groupName: string, isEditing: boolean): Promise<string | null> => {
         try {
             // Crear un nombre único para el archivo
             const fileExt = file.name.split('.').pop();
-            const fileName = `${groupId}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+            const fileName = `avatar-${groupName}.${fileExt}`;
             const filePath = `group-avatars/${fileName}`;
 
-            // Subir el archivo a Supabase Storage
-            const { error: uploadError } = await groupsService.storageLoadImg(file, filePath);
+            if (isEditing) {
+                // Subir el archivo a Supabase Storage
+                const { error: uploadError } = await groupsService.storageOverwritingLoadImg(file, filePath);
 
-            if (uploadError) throw uploadError;
+                if (uploadError) throw uploadError;
+            } else {
+                // Subir el archivo a Supabase Storage
+                const { error: uploadError } = await groupsService.storageLoadImg(file, filePath);
+
+                if (uploadError) throw uploadError;
+            }
 
             // Obtener la URL pública
             const { data } = await groupsService.storageGetPublicUrl(filePath);
@@ -437,7 +444,7 @@ const Settings: React.FC = () => {
                     </div>
                     <div className="mt-4">
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Imagen del Grupo (opcional)
+                            Imagen del Grupo
                         </label>
                         <div className="mt-1 flex items-center">
                             <label

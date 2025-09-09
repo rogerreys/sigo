@@ -1136,6 +1136,17 @@ export const groupsService = {
       return { data: null, error };
     }
   },
+  storageOverwritingLoadImg: async (file: File, filePath: string) => {
+    try {
+      const { data, error } = await supabase.storage.from('group-avatars').upload(filePath, file, {
+        upsert: true,
+      })
+      return { data, error };
+    } catch (error) {
+      console.error("Error fetching group avatars:", error);
+      return { data: null, error };
+    }
+  },
 
   storageGetPublicUrl: async (filePath: string) =>{
     try {
