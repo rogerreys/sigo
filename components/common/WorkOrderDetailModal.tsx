@@ -54,7 +54,7 @@ const WorkOrderDetailModal: React.FC<WorkOrderDetailModalProps> = ({ order, isOp
         try {
             // Give a moment for the UI to update to the loading state
             await new Promise(resolve => setTimeout(resolve, 50));
-            generateWorkOrderPDF(workOrder, workOrderItems, productsItems, client_name, assignedTo);
+            generateWorkOrderPDF(workOrder, workOrderItems, productsItems, client_name, assignedTo, selectedGroup?.image_url || '');
         } catch (error) {
             console.error("Error generating PDF:", error);
             Swal.fire({

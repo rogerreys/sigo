@@ -49,7 +49,8 @@ export const generateWorkOrderPDF = (
     workOrderItems: WorkOrderItems[],
     productsItems: Product[],
     clientName: string,
-    assignedToName: string
+    assignedToName: string,
+    groupImage: string
 ) => {
     const doc = new jsPDF();
     const { colors, fonts, margins } = PDF_CONFIG;
@@ -75,7 +76,7 @@ export const generateWorkOrderPDF = (
         return false;
     };
 
-    const formatCurrency = (value: number | null | undefined): string => 
+    const formatCurrency = (value: number | null | undefined): string =>
         `$${(value || 0).toFixed(2)}`;
 
     const formatDate = (dateString: string | undefined): string => {
@@ -89,17 +90,50 @@ export const generateWorkOrderPDF = (
 
     // Header Section
     const renderHeader = () => {
+        // Add group image in the top right corner if provided
+        if (groupImage) {
+            try {
+                const maxWidth = 60; // Maximum width for the image
+                const maxHeight = 35; // Maximum height for the image
+
+                // Create a temporary image to get dimensions
+                const img = new Image();
+                img.src = groupImage;
+
+                // Calculate aspect ratio
+                const aspectRatio = img.width / img.height;
+
+                // Calculate dimensions maintaining aspect ratio
+                let width = maxWidth;
+                let height = width / aspectRatio;
+
+                // If height is too large, recalculate based on maxHeight
+                if (height > maxHeight) {
+                    height = maxHeight;
+                    width = height * aspectRatio;
+                }
+
+                // Position the image
+                const imgX = pageWidth - margins.right - width - 1; // 5px from right margin
+                const imgY = margins.top - (margins.top * 0.9);
+
+                doc.addImage(groupImage, 'JPEG', imgX, imgY, width, height);
+            } catch (error) {
+                console.error('Error loading group image:', error);
+            }
+        }
+
         doc.setFontSize(fonts.title);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(colors.primary);
         doc.text('ORDEN DE TRABAJO', margins.left, currentY);
-        
+
         currentY += 8;
         doc.setFontSize(fonts.small);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(colors.secondary);
         doc.text('SIGO - Sistema Integrado de Gestión de Operaciones', margins.left, currentY);
-        
+
         currentY += 10;
         addLine(currentY);
         currentY += 15;
@@ -116,17 +150,17 @@ export const generateWorkOrderPDF = (
         ];
 
         doc.setFontSize(fonts.normal);
-        
+
         infoData.forEach(([label, value], index) => {
             const isEven = index % 2 === 0;
             const xPos = isEven ? margins.left : pageWidth / 2 + 10;
-            
+
             if (isEven && index > 0) currentY += 7;
-            
+
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(colors.text);
             doc.text(label, xPos, currentY);
-            
+
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(colors.secondary);
             const valueText = doc.splitTextToSize(value, contentWidth / 2 - 30);
@@ -142,7 +176,7 @@ export const generateWorkOrderPDF = (
     const renderVehicleAndProblemSections = () => {
         const hasVehicleInfo = workOrder.vehicle_make || workOrder.vehicle_model || workOrder.vehicle_year;
         const hasProblemDescription = workOrder.problem_description;
-        
+
         if (!hasVehicleInfo && !hasProblemDescription) {
             return;
         }
@@ -204,10 +238,10 @@ export const generateWorkOrderPDF = (
     // Services and Products Tables
     const renderItemsTables = () => {
         // Group items by type
-        const services = workOrderItems.filter(item => 
+        const services = workOrderItems.filter(item =>
             item.service_description && item.service_price
         );
-        const products = workOrderItems.filter(item => 
+        const products = workOrderItems.filter(item =>
             item.product_id && item.product_quantity && item.product_unit_price
         );
 
@@ -225,7 +259,7 @@ export const generateWorkOrderPDF = (
                 head: [['SERVICIOS REALIZADOS', 'PRECIO']],
                 body: servicesData,
                 theme: 'striped',
-                headStyles: { 
+                headStyles: {
                     fillColor: colors.primary,
                     textColor: 255,
                     fontSize: fonts.normal,
@@ -252,7 +286,7 @@ export const generateWorkOrderPDF = (
             const productsData = products.map(item => {
                 const product = productsItems.find(p => p.id === item.product_id);
                 const subtotal = (item.product_quantity || 0) * (item.product_unit_price || 0);
-                
+
                 return [
                     product?.name || 'Producto no encontrado',
                     item.product_quantity?.toString() || '0',
@@ -266,7 +300,7 @@ export const generateWorkOrderPDF = (
                 head: [['REPUESTOS Y MATERIALES', 'CANT.', 'PRECIO UNIT.', 'SUBTOTAL']],
                 body: productsData,
                 theme: 'striped',
-                headStyles: { 
+                headStyles: {
                     fillColor: colors.primary,
                     textColor: 255,
                     fontSize: fonts.normal,
@@ -332,32 +366,32 @@ export const generateWorkOrderPDF = (
     // Footer
     const renderFooter = () => {
         const pageCount = (doc as any).internal.getNumberOfPages();
-        
+
         for (let i = 1; i <= pageCount; i++) {
             doc.setPage(i);
-            
+
             // Page number
             doc.setFontSize(fonts.small);
             doc.setTextColor(colors.secondary);
             doc.text(
-                `Página ${i} de ${pageCount}`, 
-                pageWidth / 2, 
-                pageHeight - 10, 
+                `Página ${i} de ${pageCount}`,
+                pageWidth / 2,
+                pageHeight - 10,
                 { align: 'center' }
             );
-            
+
             // Company info
             doc.text(
-                'SIGO - Sistema Integrado de Gestión de Operaciones', 
-                margins.left, 
+                'SIGO - Sistema Integrado de Gestión de Operaciones',
+                margins.left,
                 pageHeight - 10
             );
-            
+
             // Generation date
             doc.text(
-                `Generado: ${new Date().toLocaleDateString('es-ES')}`, 
-                pageWidth - margins.right, 
-                pageHeight - 10, 
+                `Generado: ${new Date().toLocaleDateString('es-ES')}`,
+                pageWidth - margins.right,
+                pageHeight - 10,
                 { align: 'right' }
             );
         }
@@ -378,7 +412,7 @@ export const generateWorkOrderPDF = (
             .replace(/[^a-z0-9]/g, '-')
             .replace(/-+/g, '-')
             .slice(0, 20);
-        
+
         const filename = `OT-${orderNumber}-${clientSlug}.pdf`;
         doc.save(filename);
 

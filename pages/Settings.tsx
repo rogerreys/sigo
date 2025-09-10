@@ -122,6 +122,8 @@ const Settings: React.FC = () => {
             setShowGroupModal(false);
             setNewGroup({ id: '', name: '', description: '', imageFile: null, imagePreview: '' });
             fetchGroupsCreated();
+            // Se actualiza la página para reflejar los cambios tanto de la imagen como de los otros datos
+            window.location.reload();
         } catch (error) {
             console.error('Error:', error);
             await loadingSwal.close();
@@ -177,7 +179,7 @@ const Settings: React.FC = () => {
             // Crear un nombre único para el archivo
             const fileExt = file.name.split('.').pop();
             const fileName = `avatar-${groupName}.${fileExt}`;
-            const filePath = `group-avatars/${fileName}`;
+            const filePath = `private/${fileName}`;
 
             if (isEditing) {
                 // Subir el archivo a Supabase Storage
@@ -200,6 +202,10 @@ const Settings: React.FC = () => {
             return null;
         }
     };
+    const deleteImageBucket = ( filePath: string )=>{
+        let fileName = `private/${filePath.split('/').pop()}`;
+        groupsService.storageDeleteImg(fileName);
+    }
 
     const fetchUsers = useCallback(async () => {
         setLoading(true);
@@ -471,6 +477,7 @@ const Settings: React.FC = () => {
                                     <button
                                         type="button"
                                         onClick={(e) => {
+                                            deleteImageBucket(newGroup.imagePreview);
                                             e.stopPropagation();
                                             setNewGroup(prev => ({ ...prev, imageFile: null, imagePreview: '' }));
                                         }}

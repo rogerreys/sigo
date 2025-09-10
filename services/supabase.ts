@@ -1138,17 +1138,29 @@ export const groupsService = {
   },
   storageOverwritingLoadImg: async (file: File, filePath: string) => {
     try {
-      const { data, error } = await supabase.storage.from('group-avatars').upload(filePath, file, {
-        upsert: true,
-      })
+      const { data, error } = await supabase.storage
+        .from("group-avatars")
+        .update(filePath, file, {
+          upsert: true,
+        });
       return { data, error };
     } catch (error) {
       console.error("Error fetching group avatars:", error);
       return { data: null, error };
     }
   },
+  storageDeleteImg: async (filePath: string) => {
+    console.log(`filePath: ${filePath}`);
+    const { data: removeData, error: removeError } = await supabase.storage
+      .from("group-avatars")
+      .remove([filePath]);
 
-  storageGetPublicUrl: async (filePath: string) =>{
+    if (removeError) throw removeError;
+    if (!removeData) return { data: null, error: null };
+    return { data: removeData, error: null };
+  },
+
+  storageGetPublicUrl: async (filePath: string) => {
     try {
       const { data } = await supabase.storage
         .from("group-avatars")
