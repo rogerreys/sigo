@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { WorkOrderStatus, WorkOrders, WorkOrderItems, Client, Product, Profiles, ServiceItem, ProductItem, Configurations } from '../types';
@@ -251,7 +250,7 @@ const NewWorkOrder: React.FC = () => {
         const servicesTotal = addedServices.reduce((acc, service) => acc + service.service_price, 0);
         const itemsTotal = addedProducItems.reduce((acc, item) => acc + (item.product_unit_price! * item.product_quantity!), 0);
         const subtotal = servicesTotal + itemsTotal;
-        const taxRate = Number(configurationsData.find(c => c.option_name === 'iva_value')?.option_value)/100 || 0;
+        const taxRate = Number(configurationsData.find(c => c.option_name === 'iva_value')?.option_value) / 100 || 0;
         const tax = subtotal * taxRate;
         const total = subtotal + tax;
         return { servicesTotal, itemsTotal, subtotal, tax, total, taxRate };
@@ -340,13 +339,40 @@ const NewWorkOrder: React.FC = () => {
                     service_description: null,
                     service_price: null
                 };
-                if (id && item.id && !item.id.startsWith('temp-')) { // .startsWith('temp-')
+                // Obtenemos el producto
+                const product = products.find(p => p.id === item.product_id);
+                if (!product) return;
+                if (id && item.id && !item.id.startsWith('temp-')) {
+                    // For existing items, we need to handle stock adjustment carefully
+                    const { data: existingItem, error: fetchError } = await workOrderItemService.getServiceItems(item.id, workOrderItemsId[0], selectedGroup!.id);
+                    if (fetchError) throw fetchError;
+
+                    // Update the work order item
                     const { error } = await workOrderItemService.updateItem(item.id, selectedGroup.id, workOrderItemsId[0], productItem);
                     if (error) throw error;
+
+                    // If quantity changed, update the stock
+                    if (existingItem && existingItem.length > 0 && existingItem[0].product_quantity !== item.product_quantity) {
+                        const quantityDiff = (existingItem[0].product_quantity || 0) - (item.product_quantity || 0);
+                        const { error: updateError } = await productService.updateStock(
+                            item.product_id || '',
+                            product.stock_quantity + quantityDiff,
+                            selectedGroup.id
+                        );
+                        if (updateError) throw updateError;
+                    }
                 }
                 else {
                     const { error } = await workOrderItemService.addItem(productItem, selectedGroup.id);
                     if (error) throw error;
+                    
+                    // Update the product stock
+                    const { error: updateError } = await productService.updateStock(
+                        item.product_id || '',
+                        product.stock_quantity - (item.product_quantity || 0),
+                        selectedGroup.id
+                    );
+                    if (updateError) throw updateError;
                 }
             }
             if (!id) {

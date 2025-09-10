@@ -372,6 +372,23 @@ export const productService = {
       return handleError(error, "productService.search");
     }
   },
+
+  // Actualizar stock
+  updateStock: async(id: string, quantity: number, group_id: string)=>{
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .update({stock_quantity: quantity})
+        .eq("id", id)
+        .eq("group_id", group_id)
+        .select()
+        .single();
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      return handleError(error, "productService.updateStock");
+    }
+  }
 };
 
 // Servicio para profiles
@@ -1150,7 +1167,6 @@ export const groupsService = {
     }
   },
   storageDeleteImg: async (filePath: string) => {
-    console.log(`filePath: ${filePath}`);
     const { data: removeData, error: removeError } = await supabase.storage
       .from("group-avatars")
       .remove([filePath]);
