@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { WorkOrders, WorkOrderItems, Product } from '../types';
+import { TbBackground } from 'react-icons/tb';
 
 interface PDFConfig {
     colors: {
@@ -59,6 +60,50 @@ export const generateWorkOrderPDF = (
     const contentWidth = pageWidth - margins.left - margins.right;
 
     let currentY = margins.top;
+
+    // Create table data
+    const signatureData = {
+        headers: [
+            {
+                content: ''
+            },
+            {
+                content: ''
+            },
+            {
+                content: ''
+            }
+        ],
+        rows: [
+            // Client info row
+            [
+                {
+                    content: `Nombre del Cliente:\n${clientName || '___________________'}`,
+                    styles: {
+                        fontStyle: 'bold',
+                        minCellHeight: 30,
+                        valign: 'middle'
+                    }
+                },
+                {
+                    content: '\n\n___________________\nFirma del Cliente',
+                    styles: {
+                        minCellHeight: 40,
+                        valign: 'bottom',
+                        halign: 'center'
+                    }
+                },
+                {
+                    content: '\n\n___________________\nFirma Autorizada',
+                    styles: {
+                        minCellHeight: 40,
+                        valign: 'bottom',
+                        halign: 'center'
+                    }
+                }
+            ]
+        ]
+    };
 
     // Helper functions
     const addLine = (y: number, color: string = colors.secondary) => {
@@ -143,7 +188,7 @@ export const generateWorkOrderPDF = (
     const renderWorkOrderInfo = () => {
         const infoData = [
             ['N° Orden:', workOrder.id || 'N/A'],
-            ['Fecha:', formatDate(workOrder.created_at)],
+            ['Fecha Entrega:', formatDate(workOrder.completed_at)],
             ['Estado:', workOrder.status || 'N/A'],
             ['Cliente:', clientName || 'N/A'],
             ['Técnico Asignado:', assignedToName || 'N/A']
@@ -343,6 +388,7 @@ export const generateWorkOrderPDF = (
         doc.rect(rightAlign - 10, totalsY - 5, 70, 35, 'F');
 
         doc.setFontSize(fonts.normal);
+
         doc.setTextColor(colors.text);
 
         // Subtotal
@@ -361,6 +407,87 @@ export const generateWorkOrderPDF = (
         doc.text(formatCurrency(total), rightAlign + 45, totalsY + 22, { align: 'right' });
 
         currentY = totalsY + 40;
+
+        // Add signature section as a borderless table
+        const signatureY = currentY;
+        const tableX = margins.left;
+        const tableWidth = pageWidth - margins.left - margins.right;
+        // Update the autoTable configuration at line 393
+        (doc as any).autoTable({
+            startY: signatureY,
+            head: [signatureData.headers.map(h => h.content)],
+            body: signatureData.rows.map(row => row.map(cell => cell.content)),
+            margin: { left: tableX, right: margins.right },
+            tableWidth: tableWidth,
+            styles: {
+                lineWidth: 0.1,
+                lineColor: [255, 255, 255], // Invisible border
+                textColor: colors.text,
+                fontSize: fonts.small,
+                cellPadding: 5,
+                overflow: 'linebreak',
+                halign: 'left',
+                valign: 'middle',
+                fillColor: [5, 255, 255], // Add this line for white background
+                fillStyle: 'F' // Add this to ensure the fill is applied
+            },
+            headStyles: {
+                fillColor: [255, 255, 255], // Transparent background
+                textColor: colors.primary,
+                fontStyle: 'bold',
+                lineWidth: 0,
+                cellPadding: { top: 0, right: 5, bottom: 0, left: 5 }
+            },
+            bodyStyles: {
+                fillColor: [255, 255, 255], // Transparent background
+                lineWidth: 0,
+                cellPadding: { top: 0, right: 5, bottom: 0, left: 5 }
+            },
+            columnStyles: {
+                0: {
+                    cellWidth: '40%',
+                    halign: 'left',
+                    valign: 'middle'
+                },
+                1: {
+                    cellWidth: '30%',
+                    halign: 'center',
+                    valign: 'bottom'
+                },
+                2: {
+                    cellWidth: '30%',
+                    halign: 'center',
+                    valign: 'bottom'
+                }
+            },
+            didParseCell: (data: any) => {
+                // Apply custom styles to header cells
+                if (data.section === 'head') {
+                    const header = signatureData.headers[data.column.index];
+                    if (header.styles) {
+                        data.cell.styles = {
+                            ...data.cell.styles,
+                            ...header.styles
+                        };
+                    }
+                }
+                // Apply custom styles to body cells
+                if (data.section === 'body' && signatureData.rows[data.row.index]) {
+                    const cell = signatureData.rows[data.row.index][data.column.index];
+                    if (cell && cell.styles) {
+                        data.cell.styles = {
+                            ...data.cell.styles,
+                            ...cell.styles
+                        };
+                    }
+                }
+            }
+        });
+
+        // Update currentY based on the table height
+        currentY = (doc as any).lastAutoTable.finalY + 10;
+
+
     };
 
     // Footer
