@@ -14,10 +14,19 @@ import { MdWork } from "react-icons/md";
 import { FaUsers, FaClipboardCheck, FaChartLine, FaFileInvoiceDollar, FaUser } from 'react-icons/fa';
 import { MdOutlineSupportAgent, MdOutlineInventory } from 'react-icons/md';
 import { GiAutoRepair } from 'react-icons/gi';
+import { HiOutlineAdjustments } from "react-icons/hi"
+import { CgRowLast } from "react-icons/cg";
 
 type IconProps = {
     className?: string;
 };
+
+export const ExtraIcon: React.FC<IconProps> = ({ className }: IconProps) => (
+    <CgRowLast  className={className} />
+);
+export const AdjustmentIcon: React.FC<IconProps> = ({ className }: IconProps) => (
+    <HiOutlineAdjustments className={className} />
+);
 
 export const FaUsersIcon: React.FC<IconProps> = ({ className }: IconProps) => (
     <FaUsers className={className} />

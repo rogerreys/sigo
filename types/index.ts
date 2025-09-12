@@ -136,6 +136,10 @@ export interface Profiles {
 }
 
 export enum WorkOrderStatus {
+  New = "new",
+  Adjustment = "adjustment",
+  Repair = "repair",
+  Extra = "extra",
   Pending = "pending",
   InProgress = "in_progress",
   Completed = "completed",
@@ -143,6 +147,10 @@ export enum WorkOrderStatus {
   Cancelled = "cancelled",
 }
 export enum WorkOrderStatusFront {
+  new = "Nuevo",
+  adjustment = "Ajuste",
+  repair = "Reparación",
+  extra = "Extra",
   pending = "Pendiente",
   in_progress = "En Proceso",
   completed = "Completado",

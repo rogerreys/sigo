@@ -1,8 +1,7 @@
-
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { Client, Profiles, WorkOrders, WorkOrderStatus, WorkOrderStatusFront } from '../types';
 import Button from '../components/common/Button';
-import { EditIcon, PlusIcon, SearchIcon, CheckCircleIcon, ClockIcon, PauseCircleIcon, DocumentTextIcon, XCircleIcon, FilterIcon, ChevronDownIcon } from '../utils/icons';
+import { EditIcon, PlusIcon, SearchIcon, CheckCircleIcon, ClockIcon, PauseCircleIcon, DocumentTextIcon, XCircleIcon, FilterIcon, ChevronDownIcon, AdjustmentIcon, AutoRepairIcon, ExtraIcon } from '../utils/icons';
 import { useNavigate } from 'react-router-dom';
 import { workOrderService, clientService, userService } from '../services/supabase';
 import WorkOrderDetailModal from '../components/common/WorkOrderDetailModal';
@@ -65,6 +64,10 @@ const WorkOrders: React.FC = () => {
             [WorkOrderStatus.Completed]: 0,
             [WorkOrderStatus.Billed]: 0,
             [WorkOrderStatus.Cancelled]: 0,
+            [WorkOrderStatus.New]: 0,
+            [WorkOrderStatus.Adjustment]: 0,
+            [WorkOrderStatus.Repair]: 0,
+            [WorkOrderStatus.Extra]: 0,
         };
         workOrders.forEach(wo => {
             if (wo.status in counts) {
@@ -80,7 +83,16 @@ const WorkOrders: React.FC = () => {
         { status: WorkOrderStatus.Pending, icon: <PauseCircleIcon className="h-8 w-8 text-gray-500" /> },
         { status: WorkOrderStatus.Billed, icon: <DocumentTextIcon className="h-8 w-8 text-purple-500" /> },
         { status: WorkOrderStatus.Cancelled, icon: <XCircleIcon className="h-8 w-8 text-red-500" /> },
+        { status: WorkOrderStatus.New, icon: <PlusIcon className="h-8 w-8 text-green-500" /> },
+        { status: WorkOrderStatus.Adjustment, icon: <AdjustmentIcon className="h-8 w-8 text-blue-500" /> },
+        { status: WorkOrderStatus.Repair, icon: <AutoRepairIcon className="h-8 w-8 text-gray-500" /> },
+        { status: WorkOrderStatus.Extra, icon: <ExtraIcon className="h-8 w-8 text-purple-500" /> },
     ];
+
+    const [showAllStatus, setShowAllStatus] = useState(false);
+    const visibleStatusCards = useMemo(() => {
+        return showAllStatus ? statusCards : statusCards.slice(0, 5);
+    }, [showAllStatus, statusCards]);
 
     const filterOptions = ['All', ...Object.values(WorkOrderStatus)];
 
@@ -179,16 +191,34 @@ const WorkOrders: React.FC = () => {
                 </Button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-                {statusCards.map(({ status, icon }) => (
-                    <div key={status} className="bg-surface rounded-xl shadow-md p-4 flex items-center">
-                        <div className="mr-4">{icon}</div>
-                        <div>
-                            <p className="text-sm text-gray-500 font-medium">{getStatusDisplayName(status as WorkOrderStatus)}</p>
-                            <p className="text-2xl font-bold text-gray-800">{statusCounts[status]}</p>
+            <div className="mb-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-2">
+                    {visibleStatusCards.map(({ status, icon }) => (
+                        <div key={status} className="bg-surface rounded-xl shadow-md p-4 flex items-center hover:shadow-lg transition-shadow duration-200">
+                            <div className="mr-3">{icon}</div>
+                            <div>
+                                <p className="text-sm text-gray-500 font-medium">{getStatusDisplayName(status as WorkOrderStatus)}</p>
+                                <p className="text-2xl font-bold text-gray-800">{statusCounts[status]}</p>
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
+                <button
+                    onClick={() => setShowAllStatus(!showAllStatus)}
+                    className="text-sm text-blue-600 hover:text-blue-800 flex items-center mt-2"
+                >
+                    {showAllStatus ? (
+                        <>
+                            <ChevronDownIcon className="h-4 w-4 transform rotate-180 mr-1" />
+                            Mostrar menos
+                        </>
+                    ) : (
+                        <>
+                            <ChevronDownIcon className="h-4 w-4 mr-1" />
+                            Mostrar todos los estados ({statusCards.length - 5} más)
+                        </>
+                    )}
+                </button>
             </div>
 
             <div className="bg-surface rounded-xl shadow-lg p-6">
