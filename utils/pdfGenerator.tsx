@@ -400,7 +400,7 @@ export const generateWorkOrderPDF = (
             doc.text(formatCurrency(subtotal), rightAlign + 45, totalsY + 5, { align: 'right' });
 
             // Tax
-            doc.text(`IVA (${(taxRate * 100).toFixed(0)}%):`, rightAlign, totalsY + 12);
+            doc.text(`IVA (${(taxRate).toFixed(0)}%):`, rightAlign, totalsY + 12);
             doc.text(formatCurrency(taxAmount), rightAlign + 45, totalsY + 12, { align: 'right' });
 
             // Total

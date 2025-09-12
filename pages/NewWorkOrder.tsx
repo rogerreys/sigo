@@ -253,7 +253,7 @@ const NewWorkOrder: React.FC = () => {
     }, [addedServices]);
 
     const subtotalProducts = useMemo(() => {
-        return addedProducItems.reduce((sum, item) => 
+        return addedProducItems.reduce((sum, item) =>
             sum + (item.product_unit_price * item.product_quantity), 0);
     }, [addedProducItems]);
 
@@ -297,7 +297,7 @@ const NewWorkOrder: React.FC = () => {
                 fuel_level: fuelLevel || '',
                 problem_description: problemDescription || '',
                 diagnostic_notes: diagnosis || '',
-                tax_rate: iva,
+                tax_rate: includeTax ? ivaValue : 0,
                 tax_amount: iva,
                 grand_total: subtotalServices + subtotalProducts,
                 total: total,
@@ -379,7 +379,7 @@ const NewWorkOrder: React.FC = () => {
                 else {
                     const { error } = await workOrderItemService.addItem(productItem, selectedGroup.id);
                     if (error) throw error;
-                    
+
                     // Update the product stock
                     const { error: updateError } = await productService.updateStock(
                         item.product_id || '',
