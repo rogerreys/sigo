@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { WorkOrders, WorkOrderItems, Product, WorkOrderStatus, WorkOrderStatusFront } from '../../types';
 import Button from '../common/Button';
@@ -24,6 +23,7 @@ const WorkOrderDetailModal: React.FC<WorkOrderDetailModalProps> = ({ order, isOp
     const [isDisabledByStatus, setisDisabledByStatus] = useState(false);
     const { selectedGroup } = useGroup();
     const [generatingPdfId, setGeneratingPdfId] = useState<string | null>(null);
+    const [hidePrices, setHidePrices] = useState(false);
 
     const fetchWorkOrderItems = async (order: WorkOrders) => {
         if (!selectedGroup) return;
@@ -54,7 +54,7 @@ const WorkOrderDetailModal: React.FC<WorkOrderDetailModalProps> = ({ order, isOp
         try {
             // Give a moment for the UI to update to the loading state
             await new Promise(resolve => setTimeout(resolve, 50));
-            generateWorkOrderPDF(workOrder, workOrderItems, productsItems, client_name, assignedTo, selectedGroup?.image_url || '');
+            generateWorkOrderPDF(workOrder, workOrderItems, productsItems, client_name, assignedTo, selectedGroup?.image_url || '', hidePrices);
         } catch (error) {
             console.error("Error generating PDF:", error);
             Swal.fire({
@@ -200,32 +200,56 @@ const WorkOrderDetailModal: React.FC<WorkOrderDetailModalProps> = ({ order, isOp
                         </div>
                     </div>
 
-                    <div className="mt-6 pt-4 border-t text-right">
+                    {!hidePrices && <div className="mt-6 pt-4 border-t text-right">
                         <p className="text-lg font-semibold text-gray-600">Subtotal</p>
                         <p className="text-3xl font-bold text-gray-800">{formatCurrency(editableOrder.grand_total)}</p>
 
                         <p className="text-lg font-semibold text-gray-600">Total (IVA {editableOrder.tax_rate}% incluido)</p>
                         <p className="text-3xl font-bold text-gray-800">{formatCurrency(editableOrder.total)}</p>
-                    </div>
+                    </div>}
                 </div>
 
-                <div className="flex justify-between items-center p-6 border-t border-gray-200 bg-gray-50 rounded-b-xl">
-                    <div>
+                <div className="flex flex-wrap items-center justify-between gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="flex items-center space-x-4">
                         <Button
                             variant="ghost"
                             onClick={() => handleGeneratePdf(editableOrder)}
                             disabled={generatingPdfId === editableOrder.id}
-                            className="text-gray-500 hover:text-primary-600 disabled:opacity-50 disabled:cursor-wait rounded-md hover:bg-gray-100 transition-colors flex items-center gap-2"
-                            title="Generar PDF"
+                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {generatingPdfId === editableOrder.id ? (
-                                <LoadingSpinner className="h-5 w-5" />
+                                <>
+                                    <LoadingSpinner className="h-4 w-4 mr-2" />
+                                    Generando...
+                                </>
                             ) : (
-                                <DocumentPDF className="h-5 w-5" />
+                                <>
+                                    <DocumentPDF className="h-4 w-4 mr-2" />
+                                    Generar PDF
+                                </>
                             )}
-                            <span>Generar PDF</span>
                         </Button>
                     </div>
+                    
+                    <div className="flex items-center">
+                        <div className="flex items-center h-5">
+                            <input
+                                id="hide-prices"
+                                name="hide-prices"
+                                type="checkbox"
+                                checked={hidePrices}
+                                onChange={(e) => setHidePrices(e.target.checked)}
+                                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                            />
+                        </div>
+                        <label htmlFor="hide-prices" className="ml-2 block text-sm text-gray-700">
+                            Ocultar precios en PDF
+                        </label>
+                    </div>
+                </div>
+
+                <div className="flex justify-between items-center p-6 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+                    <div />
                     <div className="flex items-center">
                         <Button variant="secondary" onClick={onClose} className="mr-4" disabled={isLoading}>
                             Cancelar

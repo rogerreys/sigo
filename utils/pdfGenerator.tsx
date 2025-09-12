@@ -1,7 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { WorkOrders, WorkOrderItems, Product } from '../types';
-import { TbBackground } from 'react-icons/tb';
+import { WorkOrders, WorkOrderItems, Product, WorkOrderStatusFront } from '../types';
 
 interface PDFConfig {
     colors: {
@@ -51,7 +50,8 @@ export const generateWorkOrderPDF = (
     productsItems: Product[],
     clientName: string,
     assignedToName: string,
-    groupImage: string
+    groupImage: string,
+    hidePrices: boolean
 ) => {
     const doc = new jsPDF();
     const { colors, fonts, margins } = PDF_CONFIG;
@@ -189,7 +189,7 @@ export const generateWorkOrderPDF = (
         const infoData = [
             ['N° Orden:', workOrder.id || 'N/A'],
             ['Fecha Entrega:', formatDate(workOrder.completed_at)],
-            ['Estado:', workOrder.status || 'N/A'],
+            ['Estado:', WorkOrderStatusFront[workOrder.status as keyof typeof WorkOrderStatusFront] || 'N/A'],
             ['Cliente:', clientName || 'N/A'],
             ['Técnico Asignado:', assignedToName || 'N/A']
         ];
@@ -366,6 +366,7 @@ export const generateWorkOrderPDF = (
                 }
             });
 
+
             currentY = (doc as any).lastAutoTable.finalY + 15;
         }
     };
@@ -383,36 +384,44 @@ export const generateWorkOrderPDF = (
         const taxAmount = workOrder.tax_amount || (subtotal * taxRate);
         const total = workOrder.total || (subtotal + taxAmount);
 
-        // Totals box background
-        doc.setFillColor(colors.lightGray);
-        doc.rect(rightAlign - 10, totalsY - 5, 70, 35, 'F');
+        // Only show totals if hidePrices is false
+        if (!hidePrices) {
+            // Totals box background
+            doc.setFillColor(colors.lightGray);
+            doc.rect(rightAlign - 10, totalsY - 5, 70, 35, 'F');
 
-        doc.setFontSize(fonts.normal);
+            doc.setFontSize(fonts.normal);
 
-        doc.setTextColor(colors.text);
+            doc.setTextColor(colors.text);
 
-        // Subtotal
-        doc.setFont('helvetica', 'normal');
-        doc.text('Subtotal:', rightAlign, totalsY + 5);
-        doc.text(formatCurrency(subtotal), rightAlign + 45, totalsY + 5, { align: 'right' });
+            // Subtotal
+            doc.setFont('helvetica', 'normal');
+            doc.text('Subtotal:', rightAlign, totalsY + 5);
+            doc.text(formatCurrency(subtotal), rightAlign + 45, totalsY + 5, { align: 'right' });
 
-        // Tax
-        doc.text(`IVA (${(taxRate * 100).toFixed(0)}%):`, rightAlign, totalsY + 12);
-        doc.text(formatCurrency(taxAmount), rightAlign + 45, totalsY + 12, { align: 'right' });
+            // Tax
+            doc.text(`IVA (${(taxRate * 100).toFixed(0)}%):`, rightAlign, totalsY + 12);
+            doc.text(formatCurrency(taxAmount), rightAlign + 45, totalsY + 12, { align: 'right' });
 
-        // Total
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(fonts.subtitle);
-        doc.text('TOTAL:', rightAlign, totalsY + 22);
-        doc.text(formatCurrency(total), rightAlign + 45, totalsY + 22, { align: 'right' });
+            // Total
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(fonts.subtitle);
+            doc.text('TOTAL:', rightAlign, totalsY + 22);
+            doc.text(formatCurrency(total), rightAlign + 45, totalsY + 22, { align: 'right' });
+        } else {
+            // Just show a message that prices are hidden
+            doc.setFont('helvetica', 'italic');
+            doc.setFontSize(fonts.normal);
+            doc.setTextColor(colors.secondary);
+            //doc.text('Los precios han sido ocultados', rightAlign, totalsY + 10);
+        }
 
-        currentY = totalsY + 40;
+        currentY = totalsY + (hidePrices ? 30 : 40);
 
         // Add signature section as a borderless table
         const signatureY = currentY;
         const tableX = margins.left;
         const tableWidth = pageWidth - margins.left - margins.right;
-        // Update the autoTable configuration at line 393
         (doc as any).autoTable({
             startY: signatureY,
             head: [signatureData.headers.map(h => h.content)],
@@ -486,8 +495,6 @@ export const generateWorkOrderPDF = (
 
         // Update currentY based on the table height
         currentY = (doc as any).lastAutoTable.finalY + 10;
-
-
     };
 
     // Footer
