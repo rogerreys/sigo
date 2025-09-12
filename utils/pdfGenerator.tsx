@@ -187,7 +187,7 @@ export const generateWorkOrderPDF = (
     // Work Order Info Section
     const renderWorkOrderInfo = () => {
         const infoData = [
-            ['N° Orden:', workOrder.id || 'N/A'],
+            ['N° Orden:', workOrder.work_order_number || 'N/A'],
             ['Fecha Entrega:', formatDate(workOrder.completed_at)],
             ['Estado:', WorkOrderStatusFront[workOrder.status as keyof typeof WorkOrderStatusFront] || 'N/A'],
             ['Cliente:', clientName || 'N/A'],
@@ -541,7 +541,7 @@ export const generateWorkOrderPDF = (
         renderFooter();
 
         // Generate filename
-        const orderNumber = workOrder.id?.slice(-8) || 'unknown';
+        const orderNumber = workOrder.work_order_number?.slice(-8) || 'unknown';
         const clientSlug = clientName.toLowerCase()
             .replace(/[^a-z0-9]/g, '-')
             .replace(/-+/g, '-')

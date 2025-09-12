@@ -106,11 +106,11 @@ const WorkOrders: React.FC = () => {
                 const searchLower = searchTerm.toLowerCase();
                 const client = clients.find(c => c.id === wo.client_id);
                 return (
-                    wo.id?.toLowerCase().includes(searchLower) ||
+                    wo.work_order_number?.toLowerCase().includes(searchLower) ||
                     client?.first_name?.toLowerCase().includes(searchLower) ||
                     client?.last_name?.toLowerCase().includes(searchLower) ||
                     wo.problem_description?.toLowerCase().includes(searchLower) ||
-                    wo.vehicle_plate?.toLowerCase().includes(searchLower)
+                    wo.vehicle_make?.toLowerCase().includes(searchLower)
                 );
             });
     }, [workOrders, searchTerm, selectedStatus, clients]);
@@ -303,7 +303,7 @@ const WorkOrders: React.FC = () => {
                             <tbody className="bg-white divide-y divide-gray-200">
                                 {filteredWorkOrders.map((wo) => (
                                     <tr key={wo.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary-600 hover:underline cursor-pointer" onClick={() => handleViewDetails(wo)}>{wo.id}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary-600 hover:underline cursor-pointer" onClick={() => handleViewDetails(wo)}>{wo.work_order_number}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{clients.find(c => c.id === wo.client_id)?.first_name + ' ' + clients.find(c => c.id === wo.client_id)?.last_name}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{users.find(u => u.id === wo.profile_id)?.full_name}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm">

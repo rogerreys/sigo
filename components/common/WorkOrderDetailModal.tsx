@@ -110,7 +110,7 @@ const WorkOrderDetailModal: React.FC<WorkOrderDetailModalProps> = ({ order, isOp
                 `}</style>
                 <div className="flex justify-between items-center p-6 border-b border-gray-200">
                     <h2 id="modal-title" className="text-2xl font-bold text-gray-800">
-                        Orden de Trabajo: <span className="text-primary-600">{editableOrder.id}</span>
+                        Orden de Trabajo: <span className="text-primary-600">{editableOrder.work_order_number}</span>
                     </h2>
                     <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500">
                         <MdWorkOrderIcon className="h-6 w-6 text-gray-600" />
