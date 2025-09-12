@@ -17,7 +17,8 @@ const defaultClient: Client = {
     city: '',
     state: '',
     postal_code: '',
-    group_id: ''
+    group_id: '',
+    subtype: 'P' // Default to 'P' for individual
 };
 
 const NewClient: React.FC = () => {
@@ -38,6 +39,16 @@ const NewClient: React.FC = () => {
             fetchClient();
         }
     }, [id]);
+
+    const handleClientTypeChange = (type: 'C' | 'P') => {
+        setFormData(prev => ({
+            ...prev,
+            subtype: type,
+            // Reset name fields when changing type
+            first_name: '',
+            last_name: ''
+        }));
+    };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -78,6 +89,10 @@ const NewClient: React.FC = () => {
         }
     };
 
+    // Determine field labels based on client type
+    const firstNameLabel = formData.subtype === 'C' ? 'Nombre de la Empresa' : 'Nombre';
+    const lastNameLabel = formData.subtype === 'C' ? 'Nombre del Contacto' : 'Apellido';
+
     return (
         <div className="max-w-4xl mx-auto p-6">
             <GroupGuard>
@@ -97,79 +112,130 @@ const NewClient: React.FC = () => {
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Client Type and Registration Date - Two Columns */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        {/* Client Type Selector */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Nombre <span className="text-red-500">*</span>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Tipo de Cliente
+                            </label>
+                            <div className="flex space-x-2">
+                                <button
+                                    type="button"
+                                    onClick={() => handleClientTypeChange('P')}
+                                    className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${formData.subtype === 'P'
+                                            ? 'bg-primary-600 text-white'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        }`}
+                                >
+                                    Persona
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleClientTypeChange('C')}
+                                    className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${formData.subtype === 'C'
+                                            ? 'bg-primary-600 text-white'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        }`}
+                                >
+                                    Empresa
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Registration Date */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Fecha de Registro
+                            </label>
+                            <div className="relative">
+                                <div className="flex items-center h-10 px-3 border border-gray-300 rounded-md bg-gray-50 text-gray-700 text-sm">
+                                    {new Date().toLocaleDateString('es-ES', {
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric'
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                        <div>
+                            <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">
+                                {firstNameLabel} *
                             </label>
                             <input
                                 type="text"
                                 name="first_name"
+                                id="first_name"
                                 value={formData.first_name}
                                 onChange={handleChange}
-                                required
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                required
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Apellido <span className="text-red-500">*</span>
+                            <label htmlFor="last_name" className="block text-sm font-medium text-gray-700">
+                                {lastNameLabel} *
                             </label>
                             <input
                                 type="text"
                                 name="last_name"
+                                id="last_name"
                                 value={formData.last_name}
                                 onChange={handleChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                                 required
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Correo Electrónico <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                                type="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleChange}
-                                required
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Teléfono
-                            </label>
-                            <input
-                                type="tel"
-                                name="phone"
-                                value={formData.phone}
-                                maxLength={10}
-                                minLength={10}
-                                required
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                            />
-                        </div>
-
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Dirección
-                            </label>
-                            <input
-                                type="text"
-                                name="address"
-                                value={formData.address}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                             />
                         </div>
                     </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Correo Electrónico *
+                        </label>
+                        <input
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Teléfono
+                        </label>
+                        <input
+                            type="tel"
+                            name="phone"
+                            value={formData.phone}
+                            maxLength={10}
+                            minLength={10}
+                            required
+                            onChange={handleChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                    </div>
+
+                    <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Dirección
+                        </label>
+                        <input
+                            type="text"
+                            name="address"
+                            value={formData.address}
+                            onChange={handleChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                    </div>
+
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             Ciudad
@@ -182,6 +248,7 @@ const NewClient: React.FC = () => {
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                     </div>
+
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             Código Postal
@@ -194,9 +261,10 @@ const NewClient: React.FC = () => {
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                         />
                     </div>
+
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Notas
+                            Observaciones
                         </label>
                         <textarea
                             name="notes"

@@ -38,6 +38,7 @@ export interface Client {
   updated_at?: string;
   user_id?: string;
   group_id: string;
+  subtype: 'C' | 'P';
 }
 /* Se comento por no estar completo
 export interface Product {
