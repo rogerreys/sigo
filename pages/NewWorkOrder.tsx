@@ -20,7 +20,8 @@ const NewWorkOrder: React.FC = () => {
     const navigate = useNavigate();
     // Get the id from the URL
     const { id } = useParams();
-
+    // Include tax
+    const [includeTax, setIncludeTax] = useState(true);
     // Data from DB
     const [clients, setClients] = useState<Client[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
@@ -44,13 +45,13 @@ const NewWorkOrder: React.FC = () => {
     const [assignedToId, setAssignedToId] = useState<string>('');
     const [addedServices, setAddedServices] = useState<ServiceItem[]>([]);
     const [addedProducItems, setAddedProducItems] = useState<(ProductItem)[]>([]);
-
+    const [ivaValue, setIvaValue] = useState(0);
     // State for adding new items/services
     const [newServiceDesc, setNewServiceDesc] = useState('');
     const [newServicePrice, setNewServicePrice] = useState('');
     const [selectedProductId, setSelectedProductId] = useState('');
     const [selectedProductQuantity, setSelectedProductQuantity] = useState(1);
-
+    // Grupo
     const { selectedGroup } = useGroup();
 
     useEffect(() => {
@@ -95,6 +96,7 @@ const NewWorkOrder: React.FC = () => {
             setFuelLevel(woData.data.fuel_level || '');
             setProblemDescription(woData.data.problem_description || '');
             setDiagnosis(woData.data.diagnostic_notes || '');
+            setIvaValue(Number(configurationsData.data.find(c => c.option_name === 'iva_value')?.option_value));
 
             const { data: items, error: itemsError } = await workOrderItemService.getItems(woData.data.work_order_items_id!, selectedGroup.id);
             if (itemsError) throw itemsError;
@@ -246,15 +248,27 @@ const NewWorkOrder: React.FC = () => {
         setAssignedToId(e.target.value);
     };
 
-    const quoteTotals = useMemo(() => {
-        const servicesTotal = addedServices.reduce((acc, service) => acc + service.service_price, 0);
-        const itemsTotal = addedProducItems.reduce((acc, item) => acc + (item.product_unit_price! * item.product_quantity!), 0);
-        const subtotal = servicesTotal + itemsTotal;
-        const taxRate = Number(configurationsData.find(c => c.option_name === 'iva_value')?.option_value) / 100 || 0;
-        const tax = subtotal * taxRate;
-        const total = subtotal + tax;
-        return { servicesTotal, itemsTotal, subtotal, tax, total, taxRate };
-    }, [addedServices, addedProducItems]);
+    const subtotalServices = useMemo(() => {
+        return addedServices.reduce((sum, service) => sum + (service.service_price || 0), 0);
+    }, [addedServices]);
+
+    const subtotalProducts = useMemo(() => {
+        return addedProducItems.reduce((sum, item) => 
+            sum + (item.product_unit_price * item.product_quantity), 0);
+    }, [addedProducItems]);
+
+    const iva = useMemo(() => {
+        const subtotal = subtotalServices + subtotalProducts;
+        return includeTax ? subtotal * ivaValue / 100 : 0;
+    }, [subtotalServices, subtotalProducts, includeTax, ivaValue]);
+
+    const total = useMemo(() => {
+        return subtotalServices + subtotalProducts + iva;
+    }, [subtotalServices, subtotalProducts, iva]);
+
+    const toggleIncludeTax = () => {
+        setIncludeTax(!includeTax);
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -283,10 +297,10 @@ const NewWorkOrder: React.FC = () => {
                 fuel_level: fuelLevel || '',
                 problem_description: problemDescription || '',
                 diagnostic_notes: diagnosis || '',
-                tax_rate: quoteTotals.taxRate,
-                tax_amount: quoteTotals.tax,
-                grand_total: quoteTotals.subtotal,
-                total: quoteTotals.total,
+                tax_rate: iva,
+                tax_amount: iva,
+                grand_total: subtotalServices + subtotalProducts,
+                total: total,
                 //work_order_items_id: workOrderId
             };
 
@@ -557,11 +571,26 @@ const NewWorkOrder: React.FC = () => {
                         <div className="bg-surface rounded-xl shadow-lg p-6 space-y-4">
                             <h2 className="text-xl font-semibold text-gray-700 border-b pb-3 mb-4">Resumen del Presupuesto</h2>
                             <div className="space-y-2 text-sm">
-                                <div className="flex justify-between"><span className="text-gray-600">Subtotal Servicios:</span> <span className="font-medium">${quoteTotals.servicesTotal.toFixed(2)}</span></div>
-                                <div className="flex justify-between"><span className="text-gray-600">Subtotal Repuestos:</span> <span className="font-medium">${quoteTotals.itemsTotal.toFixed(2)}</span></div>
-                                <div className="flex justify-between border-t pt-2"><span className="text-gray-600">Subtotal:</span> <span className="font-medium">${quoteTotals.subtotal.toFixed(2)}</span></div>
-                                <div className="flex justify-between"><span className="text-gray-600">IVA ({(quoteTotals.taxRate * 100).toFixed(0)}%):</span> <span className="font-medium">${quoteTotals.tax.toFixed(2)}</span></div>
-                                <div className="flex justify-between text-lg font-bold border-t pt-2 mt-2"><span className="text-gray-800">Total:</span> <span className="text-primary-600">${quoteTotals.total.toFixed(2)}</span></div>
+                                <div className="flex justify-between"><span className="text-gray-600">Subtotal Servicios:</span> <span className="font-medium">${subtotalServices.toFixed(2)}</span></div>
+                                <div className="flex justify-between"><span className="text-gray-600">Subtotal Productos:</span> <span className="font-medium">${subtotalProducts.toFixed(2)}</span></div>
+                                <div className="flex justify-between border-t pt-2"><span className="text-gray-600">Subtotal:</span> <span className="font-medium">${(subtotalServices + subtotalProducts).toFixed(2)}</span></div>
+                                <div className="flex justify-between"><span className="text-gray-600">IVA ({ivaValue}%):</span> <span className="font-medium">${iva.toFixed(2)}</span></div>
+                                <div className="flex justify-between text-lg font-bold border-t pt-2 mt-2"><span className="text-gray-800">Total:</span> <span className="text-primary-600">${total.toFixed(2)}</span></div>
+                            </div>
+                            <div className="mt-6">
+                                <div className="flex justify-between items-center mb-4">
+                                    <div className="flex items-center space-x-2">
+                                        <label className="flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={includeTax}
+                                                onChange={toggleIncludeTax}
+                                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                            />
+                                            <span className="ml-2 text-sm text-gray-700">Incluir IVA ({ivaValue}%)</span>
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div className="bg-surface rounded-xl shadow-lg p-6 space-y-4">
