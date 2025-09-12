@@ -97,6 +97,7 @@ export interface WorkOrderItems {
 }
 export interface WorkOrders {
   id?: string;
+  work_order_number?: string;
   client_id: string;
   profile_id: string;
   grand_total: number;
@@ -180,4 +181,10 @@ export interface Configurations {
   data_type: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface Sequence {
+  id: number;
+  group_id: string;
+  sequential: number;
 }

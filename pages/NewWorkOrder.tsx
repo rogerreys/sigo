@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { WorkOrderStatus, WorkOrders, WorkOrderItems, Client, Product, Profiles, ServiceItem, ProductItem, Configurations } from '../types';
+import { WorkOrderStatus, WorkOrders, WorkOrderItems, Client, Product, Profiles, ServiceItem, ProductItem, Configurations, Sequence } from '../types';
 import Button from '../components/common/Button';
 import { XCircleIcon } from '../utils/icons';
-import { clientService, productService, userService, workOrderItemService, workOrderService, configurationsService } from '../services/supabase';
+import { clientService, productService, userService, workOrderItemService, workOrderService, configurationsService, sequenceService } from '../services/supabase';
 import { useGroup } from '../components/common/GroupContext';
 import GroupGuard from '../components/common/GroupGuard';
 import Swal from 'sweetalert2';
@@ -51,6 +51,8 @@ const NewWorkOrder: React.FC = () => {
     const [newServicePrice, setNewServicePrice] = useState('');
     const [selectedProductId, setSelectedProductId] = useState('');
     const [selectedProductQuantity, setSelectedProductQuantity] = useState(1);
+    // Secuencial
+    const [sequence, setSequence] = useState<Sequence>({} as Sequence);
     // Grupo
     const { selectedGroup } = useGroup();
 
@@ -72,7 +74,7 @@ const NewWorkOrder: React.FC = () => {
             const workOrderIds: string[] = [];
             const productItemsToAdd: ProductItem[] = [];
 
-            const [woData, productsData, configurationsData] = await Promise.all([
+            const [woData, productsData] = await Promise.all([
                 workOrderService.getById(id, selectedGroup.id),
                 productService.getByGroupId(selectedGroup.id),
                 configurationsService.getByGroupId(selectedGroup.id)
@@ -81,9 +83,6 @@ const NewWorkOrder: React.FC = () => {
             if (!woData.data) return;
             if (productsData.error) throw productsData.error;
             if (!productsData.data) return;
-            if (configurationsData.error) throw configurationsData.error;
-            if (!configurationsData.data) return;
-            setConfigurationsData(configurationsData.data as Configurations[]);
             setProducts(productsData.data as Product[]);
 
             /*setWorkOrder(woData as WorkOrders[]);*/
@@ -96,7 +95,6 @@ const NewWorkOrder: React.FC = () => {
             setFuelLevel(woData.data.fuel_level || '');
             setProblemDescription(woData.data.problem_description || '');
             setDiagnosis(woData.data.diagnostic_notes || '');
-            setIvaValue(Number(configurationsData.data.find(c => c.option_name === 'iva_value')?.option_value));
 
             const { data: items, error: itemsError } = await workOrderItemService.getItems(woData.data.work_order_items_id!, selectedGroup.id);
             if (itemsError) throw itemsError;
@@ -143,15 +141,20 @@ const NewWorkOrder: React.FC = () => {
         setLoadingData(true);
         try {
             if (!selectedGroup) return;
-            const [clientsRes, productsRes, usersRes] = await Promise.all([
+            const [clientsRes, productsRes, usersRes, configurationsData] = await Promise.all([
                 clientService.getAll(selectedGroup.id),
                 productService.getAll(selectedGroup.id),
                 userService.getAll(selectedGroup.id),
+                configurationsService.getByGroupId(selectedGroup.id)
             ]);
             if (clientsRes.data) setClients(clientsRes.data as Client[]);
             if (productsRes.data) setProducts(productsRes.data as Product[]);
             if (usersRes.data) setUsers(usersRes.data as Profiles[]);
+            if (configurationsData.error) throw configurationsData.error;
+            if (!configurationsData.data) return;
+            setConfigurationsData(configurationsData.data as Configurations[]);
 
+            setIvaValue(Number(configurationsData.data.find(c => c.option_name === 'iva_value')?.option_value));
             return true;
         } catch (error) {
             console.error("Error fetching data for new work order:", error);
@@ -284,6 +287,7 @@ const NewWorkOrder: React.FC = () => {
 
         setIsSubmitting(true);
 
+        // Crear orden de trabajo
         try {
             // 2. Create the work order data with proper types
             const newWorkOrderData: WorkOrders = {
@@ -314,6 +318,25 @@ const NewWorkOrder: React.FC = () => {
                 // workOrderItemsId.push(workOrder.work_order_items_id!); // Use the existing ID when updating
                 setWorkOrderItemsId([workOrder.work_order_items_id!]);
             } else {
+                // Conseguir secuencial
+                let secuential: Sequence | null = null;
+                const sequenceData = await sequenceService.getByGroup(selectedGroup.id);
+                if (sequenceData.error) throw sequenceData.error;
+                if (sequenceData.data?.length === 0) {
+                    const result = await sequenceService.create(selectedGroup.id);
+                    if (result.error) throw result.error;
+                    setSequence(result.data as Sequence);
+                    secuential = result?.data || {} as Sequence;
+                } else {
+                    // Incrementar secuencial
+                    const result = await sequenceService.increment(selectedGroup.id);
+                    if (result?.error) throw result.error;
+                    setSequence(result?.data || {} as Sequence);
+                    secuential = result?.data || {} as Sequence;
+                }
+                newWorkOrderData.work_order_number = `${selectedGroup.name.slice(0, 3).toUpperCase()}-${secuential?.sequential.toString().padStart(4, '0')}`;
+                
+                // Crear orden de trabajo
                 const { data: workOrder, error: workOrderError } = await workOrderService.create(newWorkOrderData, selectedGroup.id);
                 if (workOrderError) throw workOrderError;
                 if (!workOrder) throw new Error('No se pudo crear la orden de trabajo');

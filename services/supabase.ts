@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../types/supabase";
-import { Configurations, WorkOrderItems } from "../types";
+import { Configurations, WorkOrderItems, Sequence } from "../types";
 
 // Tipos para TypeScript
 type Tables = Database["public"]["Tables"];
@@ -374,11 +374,11 @@ export const productService = {
   },
 
   // Actualizar stock
-  updateStock: async(id: string, quantity: number, group_id: string)=>{
+  updateStock: async (id: string, quantity: number, group_id: string) => {
     try {
       const { data, error } = await supabase
         .from("products")
-        .update({stock_quantity: quantity})
+        .update({ stock_quantity: quantity })
         .eq("id", id)
         .eq("group_id", group_id)
         .select()
@@ -388,7 +388,7 @@ export const productService = {
     } catch (error) {
       return handleError(error, "productService.updateStock");
     }
-  }
+  },
 };
 
 // Servicio para profiles
@@ -1393,4 +1393,56 @@ export const configurationsService = {
       return handleError(error, "configurationsService.update");
     }
   },
+};
+
+export const sequenceService = {
+  getByGroup: async (groupId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("sequence")
+        .select("*")
+        .eq("group_id", groupId);
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      return handleError(error, "sequenceService.getByGroup");
+    }
+  },
+  create: async (groupId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('sequence')
+        .insert([
+          {
+            group_id: groupId,
+            sequential: 1,
+          },
+        ])
+        .select()
+        .single();
+      if (error) throw error;
+      return { data: data as Sequence, error: null };
+    } catch (error) {
+      return handleError(error, "sequenceService.create");
+    }
+  },
+  increment: async(groupId: string) =>{
+    try {
+      const sequenceData = await sequenceService.getByGroup(groupId);
+      if (sequenceData.error) throw sequenceData.error;
+      if (!sequenceData.data) return;
+      const { data, error } = await supabase
+        .from('sequence')
+        .update({
+          sequential: sequenceData.data[0].sequential + 1,
+        })
+        .eq("group_id", groupId)
+        .select()
+        .single();
+      if (error) throw error;
+      return { data: data as Sequence, error: null };
+    } catch (error) {
+      return handleError(error, "sequenceService.increment");
+    }
+  }
 };
