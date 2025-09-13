@@ -16,11 +16,15 @@ import { MdOutlineSupportAgent, MdOutlineInventory } from 'react-icons/md';
 import { GiAutoRepair } from 'react-icons/gi';
 import { HiOutlineAdjustments } from "react-icons/hi"
 import { CgRowLast } from "react-icons/cg";
+import { HiBuildingOffice } from "react-icons/hi2";
 
 type IconProps = {
     className?: string;
 };
 
+export const BuildingOfficeIcon: React.FC<IconProps> = ({ className }: IconProps) => (
+    <HiBuildingOffice className={className} />
+);
 export const ExtraIcon: React.FC<IconProps> = ({ className }: IconProps) => (
     <CgRowLast  className={className} />
 );
