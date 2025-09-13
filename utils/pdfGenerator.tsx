@@ -161,8 +161,8 @@ export const generateWorkOrderPDF = (
                 // Position the image
                 const imgX = pageWidth - margins.right - width - 1; // 5px from right margin
                 const imgY = margins.top - (margins.top * 0.9);
-
-                doc.addImage(groupImage, 'JPEG', imgX, imgY, width, height);
+                const ext = groupImage.split('.').pop() || 'JPEG'
+                doc.addImage(groupImage, ext, imgX, imgY, width, height);
             } catch (error) {
                 console.error('Error loading group image:', error);
             }
