@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { Database } from "../types/supabase";
-import { Configurations, WorkOrderItems, Sequence } from "../types";
+import { Configurations, WorkOrderItems, Sequence, ProfileGroup } from "../types";
 
 // Tipos para TypeScript
 type Tables = Database["public"]["Tables"];
@@ -1411,7 +1411,7 @@ export const sequenceService = {
   create: async (groupId: string) => {
     try {
       const { data, error } = await supabase
-        .from('sequence')
+        .from("sequence")
         .insert([
           {
             group_id: groupId,
@@ -1426,13 +1426,13 @@ export const sequenceService = {
       return handleError(error, "sequenceService.create");
     }
   },
-  increment: async(groupId: string) =>{
+  increment: async (groupId: string) => {
     try {
       const sequenceData = await sequenceService.getByGroup(groupId);
       if (sequenceData.error) throw sequenceData.error;
       if (!sequenceData.data) return;
       const { data, error } = await supabase
-        .from('sequence')
+        .from("sequence")
         .update({
           sequential: sequenceData.data[0].sequential + 1,
         })
@@ -1444,5 +1444,5 @@ export const sequenceService = {
     } catch (error) {
       return handleError(error, "sequenceService.increment");
     }
-  }
+  },
 };

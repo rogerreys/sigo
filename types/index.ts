@@ -1,7 +1,6 @@
 export interface User {
   id: string;
   email: string;
-  role: "Administrador" | "Mecánico" | "Cajero";
   name: string;
 }
 
@@ -163,6 +162,12 @@ export enum RoleService {
   administrador = "Administrador",
   gerente = "Gerente",
   personal = "Personal",
+  visitante = "Visitante",
+}
+export enum Permission {
+  view = "view",
+  edit = "edit",
+  delete = "delete",
 }
 export interface ProfileGroup {
   id: string;

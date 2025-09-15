@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
-import { LogoutIcon, ChevronDownIcon, UserCircleIcon } from '../../utils/icons';
-import { useGroup } from '../../components/common/GroupContext';
+import { useAuth } from '@/hooks/useAuth';
+import { LogoutIcon, ChevronDownIcon, UserCircleIcon } from '@/utils/icons';
+import { useGroup } from '@/components/common/GroupContext';
+import { profileGroupService } from '@/services/supabase';
+import { RoleService } from '@/types';
 
 const Header: React.FC = () => {
   const { user, signOut } = useAuth();
-  const { groups, selectedGroup, setSelectedGroup, loading } = useGroup();
+  const { groups, selectedGroup, setSelectedGroup, loading, hasRole, canEdit, canDelete } = useGroup();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -38,11 +40,21 @@ const Header: React.FC = () => {
     }
   };
 
-  const handleGroupChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleGroupChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const groupId = e.target.value;
     if (!groupId) return;
     const group = groups.find(g => g.id === groupId) || null;
     setSelectedGroup(group);
+
+    if (!user || !group) return;
+    // Obtener roles por grupos
+    const { data: roles, error: rolesError } = await profileGroupService.getByIdaGroup(user.id, group.id);
+    if (rolesError) throw rolesError;
+    if (!roles || roles.length === 0) return;
+    if (roles[0] && roles[0].role) {
+      hasRole(roles[0].role as RoleService);
+    }
+    console.log("hasRole: ", roles[0].role);
   };
 
   return (
