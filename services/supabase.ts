@@ -1039,17 +1039,17 @@ export const groupsService = {
       if (error_user) throw error_user;
       if (!user) throw new Error("Usuario no autenticado");
       // Eliminar el grupo por el usuario actual
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("groups")
         .delete()
         .eq("id", id)
         .eq("created_by", user.id);
 
       if (error) throw error;
-      return { error: null };
+      return { data, error: null };
     } catch (error) {
       console.error("Error deleting group:", error);
-      return { error };
+      return { data: null, error };
     }
   },
 

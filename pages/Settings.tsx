@@ -260,7 +260,7 @@ const Settings: React.FC = () => {
             if (!result.isConfirmed) return;
 
             if (option === 'group') {
-                const { error } = await groupsService.delete(id);
+                const { data, error } = await groupsService.delete(id);
                 if (error) throw error;
                 // Actualizar la lista de grupos después de eliminar
                 await Promise.all([fetchGroupsCreated(), fetchGroups()]);
