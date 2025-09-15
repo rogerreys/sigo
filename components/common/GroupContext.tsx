@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 import { Group, RoleService } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
 import { groupsService } from '../../services/supabase';
-import { canEdit as canEditUtil, canDelete as canDeleteUtil } from '@/utils/rbac';
+import { canEdit as canEditUtil, canDelete as canDeleteUtil, canView as canViewUtil } from '@/utils/rbac';
 
 type GroupContextType = {
   selectedGroup: Group | null;
@@ -13,7 +13,8 @@ type GroupContextType = {
   fetchGroups: () => void;
   canEdit: () => boolean;
   canDelete: () => boolean;
-  hasRole: (role: RoleService) => boolean;
+  canView: () => boolean;
+  hasRole: (role: RoleService) => void;
 };
 
 const GroupContext = createContext<GroupContextType | undefined>(undefined);
@@ -56,15 +57,15 @@ export const GroupProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const canEdit = (): boolean => {
-    console.log("role GC: ", role);
-    console.log("canEdit GC: ", role ? canEditUtil(role) : false);
     return role ? canEditUtil(role) : false;
   };
 
   const canDelete = (): boolean => {
-    console.log("role GC: ", role);
-    console.log("canDelete GC: ", role ? canDeleteUtil(role) : false);
     return role ? canDeleteUtil(role) : false;
+  };
+
+  const canView = (): boolean => {
+    return role ? canViewUtil(role) : false;
   };
 
   const hasRole = (role: RoleService) => {
@@ -72,7 +73,7 @@ export const GroupProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   return (
-    <GroupContext.Provider value={{ selectedGroup, setSelectedGroup, groups, loading, fetchGroups, canEdit, canDelete, hasRole }}>
+    <GroupContext.Provider value={{ selectedGroup, setSelectedGroup, groups, loading, fetchGroups, canEdit, canDelete, canView, hasRole }}>
       {children}
     </GroupContext.Provider>
   );

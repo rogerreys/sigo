@@ -54,7 +54,7 @@ const NewWorkOrder: React.FC = () => {
     // Secuencial
     const [sequence, setSequence] = useState<Sequence>({} as Sequence);
     // Grupo
-    const { selectedGroup } = useGroup();
+    const { selectedGroup, canEdit } = useGroup();
 
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -625,9 +625,9 @@ const NewWorkOrder: React.FC = () => {
                                 </select>
                             </FormRow>
                             <div className="row">
-                                <Button onClick={handleSubmit} isLoading={isSubmitting} className="w-full mt-4 gap-2" disabled={!selectedClientId || (addedServices.length === 0 && addedProducItems.length === 0)}>
+                                {canEdit() && <Button onClick={handleSubmit} isLoading={isSubmitting} className="w-full mt-4 gap-2" disabled={!selectedClientId || (addedServices.length === 0 && addedProducItems.length === 0)}>
                                     Guardar Orden de Trabajo
-                                </Button>
+                                </Button>}
                                 <Button onClick={() => navigate('/work-orders')} isLoading={isSubmitting} className="w-full mt-4 gap-2">
                                     Cancelar
                                 </Button>

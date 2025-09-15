@@ -21,7 +21,7 @@ const WorkOrderDetailModal: React.FC<WorkOrderDetailModalProps> = ({ order, isOp
     const [workOrderItems, setWorkOrderItems] = useState<WorkOrderItems[]>([]);
     const [productsItems, setProductsItems] = useState<Product[]>([]);
     const [isDisabledByStatus, setisDisabledByStatus] = useState(false);
-    const { selectedGroup } = useGroup();
+    const { selectedGroup, canEdit } = useGroup();
     const [generatingPdfId, setGeneratingPdfId] = useState<string | null>(null);
     const [hidePrices, setHidePrices] = useState(false);
 
@@ -254,7 +254,7 @@ const WorkOrderDetailModal: React.FC<WorkOrderDetailModalProps> = ({ order, isOp
                         <Button variant="secondary" onClick={onClose} className="mr-4" disabled={isLoading}>
                             Cancelar
                         </Button>
-                        {!isDisabledByStatus && (
+                        {!isDisabledByStatus && canEdit() && (
                             <Button onClick={handleSaveClick} isLoading={isLoading}>
                                 Guardar Cambios
                             </Button>

@@ -14,7 +14,7 @@ const Clients: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [clientTypeFilter, setClientTypeFilter] = useState<'all' | 'C' | 'P'>('all');
-    const { selectedGroup } = useGroup();
+    const { selectedGroup, canEdit, canDelete } = useGroup();
 
     const fetchClients = useCallback(async () => {
         setLoading(true);
@@ -68,9 +68,9 @@ const Clients: React.FC = () => {
             <GroupGuard>
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold text-gray-800">Gestión de Clientes</h1>
-                <Button onClick={() => navigate('/clients/new')} icon={<PlusIcon className="h-5 w-5" />}>
+                {canEdit() && <Button onClick={() => navigate('/clients/new')} icon={<PlusIcon className="h-5 w-5" />}>
                     Nuevo Cliente
-                </Button>
+                </Button>}
             </div>
 
             <div className="bg-surface rounded-xl shadow-lg p-6">
@@ -139,8 +139,8 @@ const Clients: React.FC = () => {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.phone}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(client.created_at!).toLocaleDateString()}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <button className="text-primary-600 hover:text-primary-900 mr-4" onClick={() => navigate(`/clients/new/${client.id}`)}><EditIcon className="h-5 w-5" /></button>
-                                            <button className="text-red-600 hover:text-red-900" onClick={() => handleDelete(client.id!)}><DeleteIcon className="h-5 w-5" /></button>
+                                            {canEdit() && <button className="text-primary-600 hover:text-primary-900 mr-4" onClick={() => navigate(`/clients/new/${client.id}`)}><EditIcon className="h-5 w-5" /></button>}
+                                            {canDelete() && <button className="text-red-600 hover:text-red-900" onClick={() => handleDelete(client.id!)}><DeleteIcon className="h-5 w-5" /></button>}
                                         </td>
                                     </tr>
                                 ))}

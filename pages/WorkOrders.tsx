@@ -16,7 +16,7 @@ const WorkOrders: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedStatus, setSelectedStatus] = useState<WorkOrderStatus | 'All'>('All');
     const [isFilterOpen, setFilterOpen] = useState(false);
-    const { selectedGroup } = useGroup();
+    const { selectedGroup, canEdit } = useGroup();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedWorkOrder, setSelectedWorkOrder] = useState<WorkOrders | null>(null);
@@ -184,11 +184,11 @@ const WorkOrders: React.FC = () => {
         <div>
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold text-gray-800">Órdenes de Trabajo</h1>
-                <Button
+                {canEdit() && <Button
                     icon={<PlusIcon className="h-5 w-5" />}
                     onClick={() => navigate('/work-orders/new')}>
                     Nueva Orden
-                </Button>
+                </Button>}
             </div>
 
             <div className="mb-4">
@@ -318,7 +318,7 @@ const WorkOrders: React.FC = () => {
                                             <div className="flex gap-2">
                                                 <Button variant="secondary" className="text-xs py-1 px-3" onClick={() => handleViewDetails(wo)}>Ver</Button>
                                                 {(wo.status !== WorkOrderStatus.Completed && wo.status !== WorkOrderStatus.Billed && wo.status !== WorkOrderStatus.Cancelled)
-                                                    && <Button icon={<EditIcon />} onClick={() => navigate(`/work-orders/new/${wo.id}`)}>Editar</Button>}
+                                                    && canEdit() && <Button icon={<EditIcon />} onClick={() => navigate(`/work-orders/new/${wo.id}`)}>Editar</Button>}
                                             </div>
                                         </td>
                                     </tr>
